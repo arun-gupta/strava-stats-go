@@ -11,6 +11,7 @@ type Config struct {
 	StravaClientID     string
 	StravaClientSecret string
 	StravaCallbackURL  string
+	SessionSecret      string
 	Port               string
 }
 
@@ -24,6 +25,7 @@ func Load() (*Config, error) {
 		StravaClientID:     os.Getenv("STRAVA_CLIENT_ID"),
 		StravaClientSecret: os.Getenv("STRAVA_CLIENT_SECRET"),
 		StravaCallbackURL:  getEnv("STRAVA_CALLBACK_URL", "http://localhost:8080/auth/callback"),
+		SessionSecret:      getEnv("SESSION_SECRET", "super-secret-key"),
 		Port:               getEnv("PORT", "8080"),
 	}
 

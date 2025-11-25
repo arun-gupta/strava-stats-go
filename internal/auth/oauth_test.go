@@ -15,6 +15,7 @@ func TestLoginHandler(t *testing.T) {
 		StravaClientID:     "test-client-id",
 		StravaClientSecret: "test-client-secret",
 		StravaCallbackURL:  "http://localhost:8080/auth/callback",
+		SessionSecret:      "test-secret",
 	}
 	authenticator := NewAuthenticator(cfg)
 
@@ -72,6 +73,7 @@ func TestCallbackHandler(t *testing.T) {
 		StravaClientID:     "test-client-id",
 		StravaClientSecret: "test-client-secret",
 		StravaCallbackURL:  "http://localhost:8080/auth/callback",
+		SessionSecret:      "test-secret",
 	}
 	authenticator := NewAuthenticator(cfg)
 	// Override TokenURL to point to our mock server
@@ -98,6 +100,19 @@ func TestCallbackHandler(t *testing.T) {
 	if rr.Body.String() != expectedBody {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expectedBody)
+	}
+
+	// Check if session cookie is set
+	cookies := rr.Result().Cookies()
+	foundSession := false
+	for _, cookie := range cookies {
+		if cookie.Name == "strava-session" {
+			foundSession = true
+			break
+		}
+	}
+	if !foundSession {
+		t.Errorf("handler did not set session cookie")
 	}
 
 	// 5. Test Invalid State
