@@ -14,7 +14,7 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 2.2: Implement OAuth2 flow: Redirect to Strava authorization page.
 - [x] 2.3: Implement OAuth2 flow: Handle callback and exchange codes for tokens.
 - [x] 2.4: Implement session management (store tokens).
-- [ ] 2.5: Implement token refresh logic to maintain active sessions.
+- [x] 2.5: Implement token refresh logic to maintain active sessions.
 - [ ] 2.6: Update dashboard to display "Logged in as [User Name]" after auth.
 
 ## Phase 3: Connectivity & Activity List
