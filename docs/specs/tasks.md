@@ -5,7 +5,7 @@ Revised to prioritize iterative delivery of visible features.
 ## Phase 1: Project Foundation & "Hello World"
 - [x] 1.1: Initialize Go module (`go mod init`).
 - [x] 1.2: Create directory structure (`cmd/`, `internal/`, `web/`).
-- [ ] 1.3: Implement basic HTTP server.
+- [x] 1.3: Implement basic HTTP server.
 - [ ] 1.4: Create a simple "Welcome" HTML template.
 - [ ] 1.5: Verify app runs and serves the welcome page in browser.
 
