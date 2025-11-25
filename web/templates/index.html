@@ -26,6 +26,10 @@
     <h1>Strava Activity Analyzer (Go)</h1>
     <p>Welcome to your personal activity dashboard.</p>
     
-    <a href="/auth/login" class="btn-connect">Connect with Strava</a>
+    {{if .Authenticated}}
+        <p>Logged in as <strong>{{.Name}}</strong></p>
+    {{else}}
+        <a href="/auth/login" class="btn-connect">Connect with Strava</a>
+    {{end}}
 </body>
 </html>

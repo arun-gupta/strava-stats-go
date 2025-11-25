@@ -15,12 +15,14 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 2.3: Implement OAuth2 flow: Handle callback and exchange codes for tokens.
 - [x] 2.4: Implement session management (store tokens).
 - [x] 2.5: Implement token refresh logic to maintain active sessions.
-- [ ] 2.6: Update dashboard to display "Logged in as [User Name]" after auth.
+- [x] 2.6: Update dashboard to display "Logged in as [User Name]" after auth.
+- [ ] 2.7: Add a top-level Strava colored banner with octocat logo pointing to GitHub repo, athlete photo, and a Logout button.
 
 ## Phase 3: Connectivity & Activity List
 - [ ] 3.1: Build Strava API client to fetch activities (`/athlete/activities`).
 - [ ] 3.2: Implement rate-limiting handling (respect HTTP 429 headers).
-- [ ] 3.3: Implement data normalization (parse `start_date_local` for date alignment, unit standardization).
+- [ ] 3.3: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default.
+- [ ] 3.3: Show a summary as three horizontal cards: start date to end date, total number of activities, total moving time. 
 - [ ] 3.4: Create HTML templates for the dashboard structure (Tabbed Layout with conditional visibility: Overview, Duration, Heatmap, Running Stats, Trends).
 - [ ] 3.5: Wire up frontend to fetch data from Go backend.
 - [ ] 3.6: Render a simple list of activities (default last 7 days based on local date) on the dashboard.

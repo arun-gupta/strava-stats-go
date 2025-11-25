@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/arungupta/strava-stats-go/internal/config"
 	"github.com/gorilla/sessions"
@@ -16,10 +19,20 @@ var StravaEndpoint = oauth2.Endpoint{
 	TokenURL: "https://www.strava.com/oauth/token",
 }
 
+// Athlete represents the Strava athlete profile.
+type Athlete struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	Profile   string `json:"profile"`
+}
+
 // Authenticator handles OAuth2 authentication.
 type Authenticator struct {
-	Config *oauth2.Config
-	Store  sessions.Store
+	Config       *oauth2.Config
+	Store        sessions.Store
+	StravaAPIURL string
 }
 
 // NewAuthenticator creates a new Authenticator instance.
@@ -33,8 +46,9 @@ func NewAuthenticator(cfg *config.Config) *Authenticator {
 	}
 	store := sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	return &Authenticator{
-		Config: oauthConfig,
-		Store:  store,
+		Config:       oauthConfig,
+		Store:        store,
+		StravaAPIURL: "https://www.strava.com/api/v3",
 	}
 }
 
@@ -74,12 +88,47 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	session.Values["token"] = string(tokenJson)
+
+	// Extract athlete info
+	var displayName string
+	if athlete := token.Extra("athlete"); athlete != nil {
+		if athleteMap, ok := athlete.(map[string]interface{}); ok {
+			firstname, _ := athleteMap["firstname"].(string)
+			lastname, _ := athleteMap["lastname"].(string)
+			username, _ := athleteMap["username"].(string)
+
+			displayName = strings.TrimSpace(fmt.Sprintf("%s %s", firstname, lastname))
+			if displayName == "" {
+				displayName = username
+			}
+		}
+	}
+
+	// Fallback: Fetch if missing
+	if displayName == "" {
+		log.Println("Athlete data missing in token response, fetching from API...")
+		if fetchedAthlete, err := a.FetchAthlete(r.Context(), token); err == nil {
+			displayName = strings.TrimSpace(fmt.Sprintf("%s %s", fetchedAthlete.Firstname, fetchedAthlete.Lastname))
+			if displayName == "" {
+				displayName = fetchedAthlete.Username
+			}
+		} else {
+			log.Printf("Failed to fetch athlete: %v", err)
+		}
+	}
+
+	if displayName != "" {
+		session.Values["athlete_name"] = displayName
+	} else {
+		log.Println("Warning: Could not determine athlete name")
+	}
+
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, "Failed to save session", http.StatusInternalServerError)
 		return
 	}
 
-	w.Write([]byte("Authentication Successful!"))
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 // GetToken retrieves the token from the session, refreshing it if necessary.
@@ -121,4 +170,24 @@ func (a *Authenticator) GetToken(w http.ResponseWriter, r *http.Request) (*oauth
 	}
 
 	return newToken, nil
+}
+
+// FetchAthlete retrieves the authenticated athlete's profile from Strava API.
+func (a *Authenticator) FetchAthlete(ctx context.Context, token *oauth2.Token) (*Athlete, error) {
+	client := a.Config.Client(ctx, token)
+	resp, err := client.Get(fmt.Sprintf("%s/athlete", a.StravaAPIURL))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch athlete: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch athlete, status: %s", resp.Status)
+	}
+
+	var athlete Athlete
+	if err := json.NewDecoder(resp.Body).Decode(&athlete); err != nil {
+		return nil, fmt.Errorf("failed to decode athlete response: %w", err)
+	}
+	return &athlete, nil
 }

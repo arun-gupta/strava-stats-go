@@ -65,9 +65,17 @@ func TestCallbackHandler(t *testing.T) {
 		if r.Method != "POST" {
 			t.Errorf("Expected POST request for token exchange, got %s", r.Method)
 		}
-		// Return mock token
+		// Return mock token with athlete info
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"access_token": "mock-token", "token_type": "Bearer", "expires_in": 3600}`))
+		w.Write([]byte(`{
+			"access_token": "mock-token", 
+			"token_type": "Bearer", 
+			"expires_in": 3600,
+			"athlete": {
+				"firstname": "John",
+				"lastname": "Doe"
+			}
+		}`))
 	}))
 	defer ts.Close()
 
@@ -94,15 +102,13 @@ func TestCallbackHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	// 4. Verify Success
-	if status := rr.Code; status != http.StatusOK {
+	if status := rr.Code; status != http.StatusTemporaryRedirect {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+			status, http.StatusTemporaryRedirect)
 	}
 
-	expectedBody := "Authentication Successful!"
-	if rr.Body.String() != expectedBody {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expectedBody)
+	if loc := rr.Header().Get("Location"); loc != "/" {
+		t.Errorf("handler returned wrong location: got %v want /", loc)
 	}
 
 	// Check if session cookie is set
@@ -116,6 +122,14 @@ func TestCallbackHandler(t *testing.T) {
 	}
 	if !foundSession {
 		t.Errorf("handler did not set session cookie")
+	}
+
+	// Check if athlete name is stored in session
+	// Parse the cookie from the response and create a new request with it
+	reqWithCookie := &http.Request{Header: http.Header{"Cookie": rr.Header()["Set-Cookie"]}}
+	session, _ := authenticator.Store.Get(reqWithCookie, "strava-session")
+	if name, ok := session.Values["athlete_name"]; !ok || name != "John Doe" {
+		t.Errorf("session does not contain correct athlete name: got %v want 'John Doe'", name)
 	}
 
 	// 5. Test Invalid State
@@ -224,5 +238,116 @@ func TestGetToken_Refresh(t *testing.T) {
 	}
 	if !foundSession {
 		t.Errorf("Expected session cookie to be updated (Set-Cookie header missing)")
+	}
+}
+
+func TestCallbackHandler_UsernameFallback(t *testing.T) {
+	// 1. Setup Mock Token Server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"access_token": "mock-token", 
+			"token_type": "Bearer", 
+			"expires_in": 3600,
+			"athlete": {
+				"username": "strava_user_123"
+			}
+		}`))
+	}))
+	defer ts.Close()
+
+	// 2. Setup Authenticator
+	cfg := &config.Config{
+		StravaClientID:     "test-client-id",
+		StravaClientSecret: "test-client-secret",
+		StravaCallbackURL:  "http://localhost:8080/auth/callback",
+		SessionSecret:      "test-secret",
+	}
+	authenticator := NewAuthenticator(cfg)
+	authenticator.Config.Endpoint.TokenURL = ts.URL
+
+	// 3. Execute Request
+	req, err := http.NewRequest("GET", "/auth/callback?state=state&code=valid-code", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(authenticator.CallbackHandler)
+	handler.ServeHTTP(rr, req)
+
+	// 4. Verify
+	if status := rr.Code; status != http.StatusTemporaryRedirect {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusTemporaryRedirect)
+	}
+
+	// Check if athlete name is stored in session as username
+	reqWithCookie := &http.Request{Header: http.Header{"Cookie": rr.Header()["Set-Cookie"]}}
+	session, _ := authenticator.Store.Get(reqWithCookie, "strava-session")
+	if name, ok := session.Values["athlete_name"]; !ok || name != "strava_user_123" {
+		t.Errorf("session does not contain correct fallback username: got %v want 'strava_user_123'", name)
+	}
+}
+
+func TestCallbackHandler_FetchFallback(t *testing.T) {
+	// 1. Setup Mock Server (handles both Token and API requests)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/oauth/token" {
+			// Token response WITHOUT athlete
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{
+				"access_token": "mock-token", 
+				"token_type": "Bearer", 
+				"expires_in": 3600
+			}`))
+			return
+		}
+		if r.URL.Path == "/athlete" {
+			// API response
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{
+				"id": 123,
+				"firstname": "Fetched",
+				"lastname": "User"
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer ts.Close()
+
+	// 2. Setup Authenticator
+	cfg := &config.Config{
+		StravaClientID:     "test-client-id",
+		StravaClientSecret: "test-client-secret",
+		StravaCallbackURL:  "http://localhost:8080/auth/callback",
+		SessionSecret:      "test-secret",
+	}
+	authenticator := NewAuthenticator(cfg)
+	authenticator.Config.Endpoint.TokenURL = ts.URL + "/oauth/token"
+	authenticator.StravaAPIURL = ts.URL // Mock the API base URL
+
+	// 3. Execute Request
+	req, err := http.NewRequest("GET", "/auth/callback?state=state&code=valid-code", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(authenticator.CallbackHandler)
+	handler.ServeHTTP(rr, req)
+
+	// 4. Verify
+	if status := rr.Code; status != http.StatusTemporaryRedirect {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusTemporaryRedirect)
+	}
+
+	// Check if athlete name is stored in session
+	reqWithCookie := &http.Request{Header: http.Header{"Cookie": rr.Header()["Set-Cookie"]}}
+	session, _ := authenticator.Store.Get(reqWithCookie, "strava-session")
+	if name, ok := session.Values["athlete_name"]; !ok || name != "Fetched User" {
+		t.Errorf("session does not contain fetched athlete name: got %v want 'Fetched User'", name)
 	}
 }

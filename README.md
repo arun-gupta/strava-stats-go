@@ -3,7 +3,7 @@
 A web application that authenticates users via Strava, fetches their activity history, and presents read-only interactive analytics.
 
 ## Status
-🚧 **Under Construction** - currently in early development (Phase 1).
+🚧 **Under Construction** - currently in development (Completed Phase 2: Authentication).
 
 ## Getting Started
 
@@ -21,10 +21,17 @@ To start the application and automatically open it in your browser (at http://lo
 ## Features
 
 ### ✅ Implemented
-*   **Project Foundation**: Initialized Go module and standard directory structure (`cmd/`, `internal/`, `web/`).
+*   **Project Foundation**: Basic HTTP server, standard directory structure (`cmd/`, `internal/`, `web/`), and configuration management (`.env`).
+*   **Secure Authentication**:
+    *   Full OAuth2 flow with Strava (Redirect & Callback).
+    *   Secure session management using cookies.
+    *   Automatic token refresh logic to maintain active sessions.
+*   **Basic Dashboard**:
+    *   Welcome page with "Connect with Strava" button.
+    *   Authenticated state display ("Logged in as [Name]").
 
 ### 🚀 Planned
-*   **Secure Authentication**: Strava OAuth2 connection with secure session management.
+*   **Activity Integration**: Fetching activities from Strava API.
 *   **Interactive Dashboard**:
     *   **Overview**: Activity counts and distribution.
     *   **Duration**: Moving time analytics.
