@@ -10,7 +10,7 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 1.5: Verify app runs and serves the welcome page in browser.
 
 ## Phase 2: Authentication & User Identity
-- [ ] 2.1: Set up configuration management for Strava Client ID/Secret (e.g., `.env`).
+- [x] 2.1: Set up configuration management for Strava Client ID/Secret (e.g., `.env`).
 - [ ] 2.2: Implement OAuth2 flow: Redirect to Strava authorization page.
 - [ ] 2.3: Implement OAuth2 flow: Handle callback and exchange codes for tokens.
 - [ ] 2.4: Implement session management (store tokens).

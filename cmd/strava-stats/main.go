@@ -6,10 +6,17 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/arungupta/strava-stats-go/internal/config"
 )
 
 func main() {
-	port := ":8080"
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	port := fmt.Sprintf(":%s", cfg.Port)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles("web/templates/index.html")
