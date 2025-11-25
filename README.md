@@ -25,16 +25,12 @@ A web application that authenticates users via Strava, fetches their activity hi
 ### Prerequisites
 *   Go 1.25.4 or higher.
 
-### Installation
+### Quickstart
+
+To start the application and automatically open it in your browser:
+
 ```bash
-# Clone the repository
-git clone https://github.com/arungupta/strava-stats-go.git
-
-# Navigate to project root
-cd strava-stats-go
-
-# Download dependencies
-go mod download
+./quickstart.sh
 ```
 
 ## Project Structure
