@@ -7,7 +7,7 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 1.2: Create directory structure (`cmd/`, `internal/`, `web/`).
 - [x] 1.3: Implement basic HTTP server.
 - [x] 1.4: Create a simple "Welcome" HTML template.
-- [ ] 1.5: Verify app runs and serves the welcome page in browser.
+- [x] 1.5: Verify app runs and serves the welcome page in browser.
 
 ## Phase 2: Authentication & User Identity
 - [ ] 2.1: Set up configuration management for Strava Client ID/Secret (e.g., `.env`).
