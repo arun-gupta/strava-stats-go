@@ -28,7 +28,7 @@ The Strava Activity Analyzer is a web application designed to authenticate with 
     - **Acceptance Criteria**:
         - WHEN the user logs in, THEN the system SHALL fetch activities from the Strava API using pagination until the history is retrieved or limits are reached.
         - WHEN fetching data, THEN the system SHALL respect Strava's API rate limits and implement backoff strategies if limits are exceeded.
-        - WHEN processing activities, THEN the system SHALL normalize timestamps to the user's local timezone for accurate daily and weekly aggregation.
+        - WHEN processing activities, THEN the system SHALL use the activity's local start time (`start_date_local`) for date-based aggregation to ensure activities are counted on the day they occurred, independent of the viewer's timezone.
 
 ### Dashboard & Visualization
 
@@ -37,13 +37,15 @@ The Strava Activity Analyzer is a web application designed to authenticate with 
     - **Acceptance Criteria**:
         - WHEN the user clicks on "Strava Stats" branding in the top-left header, THEN the system SHALL navigate to the dashboard home page.
         - WHEN viewing the dashboard, THEN the system SHALL display a summary section above the tabs showing: Date Range (with start and end dates), Total Activities count, and Total Moving Time.
-        - WHEN viewing the dashboard, THEN the system SHALL display tabs in the following order: Overview, Duration, Heatmap, Trends, Running Stats.
+        - WHEN the filtered activity list is empty, THEN the system SHALL hide the entire tabbed navigation interface.
+        - WHEN the filtered activity list contains activities, THEN the system SHALL display tabs in the following order: Overview, Duration, Heatmap, Running Stats, Trends.
+        - WHEN the filtered activity list contains no running activities, THEN the system SHALL hide the "Running Stats" tab.
 
 5. **Activity Distribution Widgets**
     - **User Story**: As a user, I want to see a breakdown of my sport types by count and duration so that I can understand my training focus.
     - **Acceptance Criteria**:
         - WHEN the "Overview" tab loads, THEN the system SHALL display an Activity Count Distribution pie/donut chart showing the number of activities per type (Run, Ride, Swim, etc.).
-        - WHEN the "Time Distribution" tab loads, THEN the system SHALL display a chart showing total moving time aggregated by activity type.
+        - WHEN the "Duration" tab loads, THEN the system SHALL display a chart showing total moving time aggregated by activity type.
         - WHEN viewing distribution charts, THEN the system SHALL display data labels directly on the chart slices showing count values or time values for segments representing more than 5% of the total.
 
 6. **Training Heatmaps**
@@ -79,6 +81,7 @@ The Strava Activity Analyzer is a web application designed to authenticate with 
     - **User Story**: As a user, I want to filter my dashboard by specific dates so that I can analyze a specific training block or year.
     - **Acceptance Criteria**:
         - WHEN the dashboard loads, THEN the system SHALL default to showing the last 7 days of activity data.
+        - WHEN determining if an activity falls within a date range, THEN the system SHALL use the activity's local start date, ensuring it is included if it occurred on that day locally.
         - WHEN the user selects a preset (e.g., 7 days, 30 days, YTD, All Time), THEN the system SHALL recompute all dashboard widgets to reflect only activities within that range.
         - WHEN the user selects a custom range, THEN the system SHALL allow picking specific start and end dates.
         - WHEN a filter is applied, THEN the system SHALL persist the selection in the URL or session so that a page refresh maintains the context.
@@ -95,7 +98,7 @@ The Strava Activity Analyzer is a web application designed to authenticate with 
 11. **Error Handling & Empty States**
     - **User Story**: As a user, I want clear feedback when no data is available or an error occurs so that I know how to proceed.
     - **Acceptance Criteria**:
-        - WHEN a selected date range contains no activities, THEN the system SHALL display a friendly "No activities found" message instead of broken charts.
+        - WHEN a selected date range contains no activities, THEN the system SHALL display a friendly "No activities found" message and hide the visualization tabs.
         - WHEN an API error or network failure occurs, THEN the system SHALL display a descriptive error message with a retry option.
 
 12. **Performance**
