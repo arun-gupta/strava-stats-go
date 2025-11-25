@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-strava-stats
+/strava-stats
 
 # Test binary, built with `go test -c`
 *.test
