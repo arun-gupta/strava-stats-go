@@ -5,6 +5,19 @@ A web application that authenticates users via Strava, fetches their activity hi
 ## Status
 🚧 **Under Construction** - currently in early development (Phase 1).
 
+## Getting Started
+
+### Prerequisites
+*   Go 1.25.4 or higher.
+
+### Quickstart
+
+To start the application and automatically open it in your browser (at http://localhost:8080):
+
+```bash
+./quickstart.sh
+```
+
 ## Features
 
 ### ✅ Implemented
@@ -19,19 +32,6 @@ A web application that authenticates users via Strava, fetches their activity hi
     *   **Running Stats**: PR tracking and distance histograms.
     *   **Trends**: Pace and distance progression over time.
 *   **Data Handling**: Local timezone awareness and metric/imperial unit support.
-
-## Getting Started
-
-### Prerequisites
-*   Go 1.25.4 or higher.
-
-### Quickstart
-
-To start the application and automatically open it in your browser:
-
-```bash
-./quickstart.sh
-```
 
 ## Project Structure
 *   `cmd/`: Application entry points.
