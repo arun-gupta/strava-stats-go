@@ -5,12 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strava Activity Analyzer (Go)</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; text-align: center; }
         h1 { color: #fc4c02; } /* Strava Orange */
+        .btn-connect {
+            display: inline-block;
+            background-color: #fc4c02;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .btn-connect:hover {
+            background-color: #e34402;
+        }
     </style>
 </head>
 <body>
     <h1>Strava Activity Analyzer (Go)</h1>
-    <p>Your activity analyzer is running.</p>
+    <p>Welcome to your personal activity dashboard.</p>
+    
+    <a href="/auth/login" class="btn-connect">Connect with Strava</a>
 </body>
 </html>

@@ -11,8 +11,8 @@ Revised to prioritize iterative delivery of visible features.
 
 ## Phase 2: Authentication & User Identity
 - [x] 2.1: Set up configuration management for Strava Client ID/Secret (e.g., `.env`).
-- [ ] 2.2: Implement OAuth2 flow: Redirect to Strava authorization page.
-- [ ] 2.3: Implement OAuth2 flow: Handle callback and exchange codes for tokens.
+- [x] 2.2: Implement OAuth2 flow: Redirect to Strava authorization page.
+- [x] 2.3: Implement OAuth2 flow: Handle callback and exchange codes for tokens.
 - [ ] 2.4: Implement session management (store tokens).
 - [ ] 2.5: Implement token refresh logic to maintain active sessions.
 - [ ] 2.6: Update dashboard to display "Logged in as [User Name]" after auth.

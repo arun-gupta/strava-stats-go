@@ -10,6 +10,7 @@ import (
 type Config struct {
 	StravaClientID     string
 	StravaClientSecret string
+	StravaCallbackURL  string
 	Port               string
 }
 
@@ -22,6 +23,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		StravaClientID:     os.Getenv("STRAVA_CLIENT_ID"),
 		StravaClientSecret: os.Getenv("STRAVA_CLIENT_SECRET"),
+		StravaCallbackURL:  getEnv("STRAVA_CALLBACK_URL", "http://localhost:8080/auth/callback"),
 		Port:               getEnv("PORT", "8080"),
 	}
 

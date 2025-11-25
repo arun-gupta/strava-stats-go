@@ -2,4 +2,7 @@ module github.com/arungupta/strava-stats-go
 
 go 1.25.4
 
-require github.com/joho/godotenv v1.5.1 // indirect
+require (
+	github.com/joho/godotenv v1.5.1 // indirect
+	golang.org/x/oauth2 v0.33.0 // indirect
+)

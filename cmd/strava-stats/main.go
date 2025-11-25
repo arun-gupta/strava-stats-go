@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/arungupta/strava-stats-go/internal/auth"
 	"github.com/arungupta/strava-stats-go/internal/config"
 )
 
@@ -16,8 +17,13 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Initialize OAuth authenticator
+	authenticator := auth.NewAuthenticator(cfg)
+
 	port := fmt.Sprintf(":%s", cfg.Port)
 
+	http.HandleFunc("/auth/login", authenticator.LoginHandler)
+	http.HandleFunc("/auth/callback", authenticator.CallbackHandler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles("web/templates/index.html")
 		if err != nil {
