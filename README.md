@@ -1,1 +1,1 @@
-# strava-stats-go
+# Strava Activity Analyzer (Go)
