@@ -69,11 +69,19 @@ func CalculateRunningStats(activities []NormalizedActivity) RunningStats {
 	var totalMovingTime int
 	var runsOver10K int
 
+	// Debug: count all activities and running activities
+	var totalActivities = len(activities)
+	var runningActivities = 0
+	var nonRunningTypes = make(map[string]int)
+
 	for _, activity := range activities {
 		if !isRunningActivity(activity.SportType) {
+			nonRunningTypes[activity.SportType]++
 			continue
 		}
 
+		runningActivities++
+		// Count all running activities, even if distance is 0
 		stats.TotalRuns++
 		totalDistance += activity.Distance
 		totalMovingTime += activity.MovingTime
@@ -82,6 +90,12 @@ func CalculateRunningStats(activities []NormalizedActivity) RunningStats {
 		if activity.Distance >= 10000 {
 			runsOver10K++
 		}
+	}
+
+	// Log for debugging
+	if totalActivities > 0 {
+		fmt.Printf("RunningStats: total activities=%d, running activities=%d, non-running types=%v\n", 
+			totalActivities, runningActivities, nonRunningTypes)
 	}
 
 	stats.RunsOver10K = runsOver10K

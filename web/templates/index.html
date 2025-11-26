@@ -1089,9 +1089,10 @@
         function updateRunningStats(data) {
             console.log('updateRunningStats called with data:', data);
             const stats = data.stats || {};
+            const prs = data.prs || {};
             const histogram = data.histogram || {};
             
-            console.log('Parsed data:', { stats, histogram });
+            console.log('Parsed data:', { stats, prs, histogram });
             
             // Update summary statistics
             const totalRunsEl = document.getElementById('total-runs');
@@ -1123,14 +1124,22 @@
                 averagePaceEl.textContent = stats.average_pace || '-';
             }
             
-            // Update Fastest 10K (from stats if available)
+            // Update Fastest 10K from PRs
             if (fastest10kEl) {
-                fastest10kEl.textContent = '-';
+                if (prs.fastest_10k && prs.fastest_10k.pace) {
+                    fastest10kEl.textContent = prs.fastest_10k.pace;
+                } else {
+                    fastest10kEl.textContent = '-';
+                }
             }
             
-            // Update Longest Run (from stats if available)
+            // Update Longest Run from PRs
             if (longestRunEl) {
-                longestRunEl.textContent = '-';
+                if (prs.longest_run && prs.longest_run.distance_miles) {
+                    longestRunEl.textContent = prs.longest_run.distance_miles.toFixed(2) + ' mi';
+                } else {
+                    longestRunEl.textContent = '-';
+                }
             }
             
             // Update distance histogram

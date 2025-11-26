@@ -218,13 +218,9 @@ func main() {
 		log.Printf("Running stats: fetching activities for user")
 
 		// Use the same date range logic as the main activities endpoint
-		// Limit API call to last 7 days to avoid fetching all activities
-		// Calculate timestamp for 7 days ago
-		sevenDaysAgo := time.Now().AddDate(0, 0, -7).Unix()
-		opts := &api.FetchActivitiesOptions{
-			After: &sevenDaysAgo,
-		}
-		activities, err := stravaClient.FetchActivities(r.Context(), token, opts)
+		// Fetch activities without date filtering - let normalization handle the date range
+		// This ensures consistency with the main endpoint
+		activities, err := stravaClient.FetchActivities(r.Context(), token, nil)
 		if err != nil {
 			if apiErr, ok := err.(*api.APIError); ok {
 				if apiErr.IsRateLimit() {
@@ -240,7 +236,7 @@ func main() {
 						// Try to refresh token and retry once
 						newToken, getErr := authenticator.GetToken(w, r)
 						if getErr == nil {
-							activities, err = stravaClient.FetchActivities(r.Context(), newToken, opts)
+							activities, err = stravaClient.FetchActivities(r.Context(), newToken, nil)
 						if err != nil {
 							w.WriteHeader(http.StatusUnauthorized)
 							json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: token refresh failed"})
