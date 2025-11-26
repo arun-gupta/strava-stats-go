@@ -153,6 +153,77 @@
             text-align: left;
             min-height: 200px;
         }
+        
+        /* Activities List */
+        .activities-list {
+            margin-top: 20px;
+        }
+        .activity-item {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: box-shadow 0.2s;
+        }
+        .activity-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .activity-info {
+            flex: 1;
+        }
+        .activity-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .activity-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .activity-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .activity-stats {
+            display: flex;
+            gap: 20px;
+            text-align: right;
+        }
+        .activity-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .activity-stat-label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+        .activity-stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #fc4c02;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
     </style>
     <script>
         function openTab(evt, tabName) {
@@ -176,22 +247,56 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    // Handle JSON error response
-                    const errorMessage = data.error || response.statusText || 'Unknown error';
-                    console.error('API error:', response.status, errorMessage);
+                    // Handle different error types
+                    let errorMessage = data.error || response.statusText || 'Unknown error';
+                    
+                    // Handle rate limiting (429)
+                    if (response.status === 429) {
+                        const retryAfter = data.retry_after || 60;
+                        errorMessage = `Rate limit exceeded. Please try again in ${retryAfter} seconds.`;
+                        console.error('Rate limit exceeded. Retry after:', retryAfter, 'seconds');
+                    }
+                    // Handle unauthorized (401)
+                    else if (response.status === 401) {
+                        errorMessage = 'Unauthorized. Please log in again.';
+                        console.error('Unauthorized error. User may need to re-authenticate.');
+                        // Optionally redirect to login
+                        setTimeout(() => {
+                            window.location.href = '/auth/login';
+                        }, 2000);
+                    }
+                    // Handle server errors (502, 503, etc.)
+                    else if (response.status >= 500) {
+                        errorMessage = 'Strava API is temporarily unavailable. Please try again later.';
+                        console.error('Server error:', response.status, errorMessage);
+                    }
+                    
                     throw new Error(errorMessage);
                 }
                 
                 // Update summary cards
                 updateSummaryCards(data);
+                
+                // Update activities list
+                updateActivitiesList(data.activities || []);
             } catch (error) {
                 console.error('Error fetching activities:', error);
-                // Show error in summary cards (truncate long messages)
+                // Show error in summary cards (show full error in console, truncated in UI)
                 const errorMsg = error.message || 'Error';
-                const shortMsg = errorMsg.length > 20 ? errorMsg.substring(0, 17) + '...' : errorMsg;
-                document.querySelector('.card:nth-child(1) .value').textContent = shortMsg;
-                document.querySelector('.card:nth-child(2) .value').textContent = shortMsg;
-                document.querySelector('.card:nth-child(3) .value').textContent = shortMsg;
+                console.error('Full error message:', errorMsg);
+                const shortMsg = errorMsg.length > 30 ? errorMsg.substring(0, 27) + '...' : errorMsg;
+                const card1 = document.querySelector('.card:nth-child(1) .value');
+                const card2 = document.querySelector('.card:nth-child(2) .value');
+                const card3 = document.querySelector('.card:nth-child(3) .value');
+                if (card1) card1.textContent = shortMsg;
+                if (card2) card2.textContent = shortMsg;
+                if (card3) card3.textContent = shortMsg;
+                
+                // Also update activities list to show error
+                const activitiesList = document.getElementById('activities-list');
+                if (activitiesList) {
+                    activitiesList.innerHTML = '<div class="empty-state">Error loading activities. Check console for details.</div>';
+                }
             }
         }
         
@@ -213,6 +318,113 @@
             if (movingTimeCard) {
                 movingTimeCard.textContent = data.totalMovingTime || '0h 0m';
             }
+        }
+        
+        function updateActivitiesList(activities) {
+            const container = document.getElementById('activities-list');
+            if (!container) return;
+            
+            if (activities.length === 0) {
+                container.innerHTML = '<div class="empty-state">No activities found in the last 7 days.</div>';
+                return;
+            }
+            
+            // Sort activities by date (newest first)
+            const sorted = [...activities].sort((a, b) => {
+                // Use local_date_str (YYYY-MM-DD) for sorting to avoid timezone issues
+                const dateA = a.local_date_str || a.start_date_local;
+                const dateB = b.local_date_str || b.start_date_local;
+                return dateB.localeCompare(dateA);
+            });
+            
+            container.innerHTML = sorted.map(activity => {
+                // Use local_date_str (YYYY-MM-DD) to avoid timezone conversion issues
+                // Parse it as a local date, not UTC
+                const dateStr = activity.local_date_str;
+                let dateStrFormatted = '';
+                if (dateStr) {
+                    // Parse YYYY-MM-DD as local date
+                    const [year, month, day] = dateStr.split('-').map(Number);
+                    const date = new Date(year, month - 1, day); // month is 0-indexed
+                    const currentYear = new Date().getFullYear();
+                    dateStrFormatted = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: year !== currentYear ? 'numeric' : undefined
+                    });
+                } else {
+                    // Fallback to start_date_local if local_date_str is not available
+                    const date = new Date(activity.start_date_local);
+                    const currentYear = new Date().getFullYear();
+                    dateStrFormatted = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: date.getFullYear() !== currentYear ? 'numeric' : undefined
+                    });
+                }
+                
+                // Format distance in imperial units (miles)
+                const distance = activity.distance_miles || (activity.distance / 1609.34);
+                const distanceStr = distance >= 0.1 
+                    ? distance.toFixed(2) + ' mi'
+                    : (distance * 5280).toFixed(0) + ' ft';
+                
+                // Get sport type emoji
+                const sportEmoji = getSportEmoji(activity.sport_type);
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-info">
+                            <div class="activity-name">${escapeHtml(activity.name || 'Untitled Activity')}</div>
+                            <div class="activity-meta">
+                                <span>${sportEmoji} ${escapeHtml(activity.sport_type || 'Unknown')}</span>
+                                <span>📅 ${dateStrFormatted}</span>
+                            </div>
+                        </div>
+                        <div class="activity-stats">
+                            <div class="activity-stat">
+                                <div class="activity-stat-label">Distance</div>
+                                <div class="activity-stat-value">${distanceStr}</div>
+                            </div>
+                            <div class="activity-stat">
+                                <div class="activity-stat-label">Time</div>
+                                <div class="activity-stat-value">${activity.moving_time_formatted || formatDuration(activity.moving_time || 0)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getSportEmoji(sportType) {
+            const emojis = {
+                'Run': '🏃',
+                'Ride': '🚴',
+                'Walk': '🚶',
+                'Hike': '🥾',
+                'Swim': '🏊',
+                'Workout': '💪',
+                'Yoga': '🧘',
+                'WeightTraining': '🏋️',
+                'VirtualRide': '🚴‍♂️',
+                'VirtualRun': '🏃‍♂️'
+            };
+            return emojis[sportType] || '🏃';
+        }
+        
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (hours > 0) {
+                return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+            }
+            return `${minutes}m`;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // Open default tab on load and fetch data if authenticated
@@ -274,7 +486,9 @@
 
             <div id="Overview" class="tabcontent">
                 <h3>Overview</h3>
-                <p>Activity list coming soon...</p>
+                <div id="activities-list" class="activities-list">
+                    <div class="loading-state">Loading activities...</div>
+                </div>
             </div>
 
             <div id="Duration" class="tabcontent">

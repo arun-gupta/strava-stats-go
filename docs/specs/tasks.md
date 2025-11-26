@@ -24,8 +24,8 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 3.3: Build Strava API client to fetch activities (`/athlete/activities`).
 - [x] 3.4: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default. If a workout occurred on a day, independent of timezone, it must be included.
 - [x] 3.5: Wire up frontend to fetch data from Go backend and fix up summary cards.
-- [ ] 3.6: Render a simple list of activities (default last 7 days based on local date) on the dashboard, in the overview tab.
-- [ ] 3.7: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
+- [x] 3.6: Render a simple list of activities (default last 7 days based on local date) on the dashboard, in the overview tab.
+- [x] 3.7: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
 
 ## Phase 4: Core Visualizations (Distributions)
 - [ ] 4.1: Integrate JavaScript charting library (e.g., Chart.js).

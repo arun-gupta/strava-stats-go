@@ -8,18 +8,18 @@ import (
 // NormalizedActivity represents an activity with normalized and computed fields.
 type NormalizedActivity struct {
 	Activity
-	LocalDate      time.Time // Date portion of start_date_local (timezone-independent)
-	LocalDateStr   string    // YYYY-MM-DD format for easy grouping
-	DistanceKm     float64   // Distance in kilometers
-	DistanceMiles  float64   // Distance in miles
-	MovingTimeHours float64  // Moving time in hours
-	MovingTimeFormatted string // Moving time formatted as "Xh Ym"
-	ElevationGainMeters float64 // Elevation gain in meters
-	ElevationGainFeet   float64 // Elevation gain in feet
-	AverageSpeedKmh    float64  // Average speed in km/h
-	AverageSpeedMph    float64  // Average speed in mph
-	MaxSpeedKmh        float64  // Max speed in km/h
-	MaxSpeedMph        float64  // Max speed in mph
+	LocalDate           time.Time `json:"local_date"`            // Date portion of start_date_local (timezone-independent)
+	LocalDateStr        string    `json:"local_date_str"`        // YYYY-MM-DD format for easy grouping
+	DistanceKm          float64   `json:"distance_km"`           // Distance in kilometers
+	DistanceMiles       float64   `json:"distance_miles"`        // Distance in miles
+	MovingTimeHours     float64   `json:"moving_time_hours"`     // Moving time in hours
+	MovingTimeFormatted string    `json:"moving_time_formatted"`  // Moving time formatted as "Xh Ym"
+	ElevationGainMeters float64   `json:"elevation_gain_meters"` // Elevation gain in meters
+	ElevationGainFeet   float64   `json:"elevation_gain_feet"`   // Elevation gain in feet
+	AverageSpeedKmh     float64   `json:"average_speed_kmh"`      // Average speed in km/h
+	AverageSpeedMph      float64   `json:"average_speed_mph"`      // Average speed in mph
+	MaxSpeedKmh          float64   `json:"max_speed_kmh"`        // Max speed in km/h
+	MaxSpeedMph          float64   `json:"max_speed_mph"`        // Max speed in mph
 }
 
 // NormalizeOptions contains options for normalizing activities.
@@ -45,9 +45,9 @@ func NormalizeActivities(activities []Activity, opts *NormalizeOptions) []Normal
 
 	var normalized []NormalizedActivity
 	for _, activity := range activities {
-		// Extract local date from start_date_local (timezone-independent)
-		// The date components (year, month, day) are extracted regardless of timezone
-		localDate := truncateToDate(activity.StartDateLocal)
+		// Extract local date from start_date_local
+		// Use the timezone from the activity if available to ensure correct date extraction
+		localDate := extractLocalDate(activity.StartDateLocal, activity.Timezone)
 		
 		// Filter: only include activities that occurred on or after the cutoff date
 		// This ensures activities are included based on their local date, not UTC
@@ -91,15 +91,66 @@ func normalizeActivity(activity Activity, localDate time.Time) NormalizedActivit
 	return norm
 }
 
+// extractLocalDate extracts the local date from a time, using the timezone if provided.
+// The key insight: start_date_local from Strava is the local time, but when Go's JSON
+// unmarshaler parses it, it might interpret it as UTC. However, the date components
+// (year, month, day) in the original string are the local date we want.
+// 
+// The solution: Extract date components from the time as if it represents local time.
+// If the timezone is provided, we can use it to properly interpret the time.
+// Otherwise, we extract the date components directly, which works because the
+// date part of start_date_local is what we want regardless of timezone conversion.
+func extractLocalDate(t time.Time, timezone string) time.Time {
+	// The key insight: start_date_local from Strava represents local time in the user's timezone.
+	// When Go's JSON unmarshaler parses it:
+	// - If the string has a timezone offset (e.g., "2024-11-25T23:00:00-08:00"), it converts to UTC
+	// - If the string has no timezone, it might parse as UTC or local time
+	//
+	// Problem: If it's converted to UTC, the UTC date might be different from the local date.
+	// Example: "2024-11-25T23:00:00-08:00" (11 PM PST) = "2024-11-26T07:00:00Z" (7 AM UTC next day)
+	// - UTC date: Nov 26
+	// - Local date: Nov 25 (what we want)
+	//
+	// Solution: Use the timezone field to convert back to local time, then extract the date.
+	if timezone != "" {
+		loc, err := time.LoadLocation(timezone)
+		if err == nil {
+			// Convert to local timezone and extract date
+			localTime := t.In(loc)
+			year, month, day := localTime.Date()
+			return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+		}
+		// If LoadLocation fails, try common timezone name mappings
+		// Strava might return formats like "(GMT-08:00) Pacific Time" or "America/Los_Angeles"
+	}
+	
+	// Fallback: Extract date from the time as-is.
+	// This works if the time wasn't converted to UTC, or if the date components
+	// happen to match the local date. Not perfect, but better than nothing.
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
 // truncateToDate truncates a time to just the date portion (midnight in UTC).
 // This extracts the date components (year, month, day) from the local time,
 // ensuring activities are grouped by their local date regardless of timezone.
 func truncateToDate(t time.Time) time.Time {
-	// Extract date components from the time (this works regardless of timezone)
-	year, month, day := t.Date()
-	// Create a new time at midnight UTC with the same date components
+	// Format the date as YYYY-MM-DD using the timezone of the time.Time value.
+	// This preserves the local date representation before extracting components.
+	dateStr := t.Format("2006-01-02")
+	
+	// Parse the date string to extract year, month, day
+	// This ensures we get the date as it appears in the original timezone
+	parsed, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		// Fallback to Date() method if parsing fails
+		year, month, day := t.Date()
+		return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	}
+	
+	// Return as UTC midnight with the same date components
 	// This allows consistent date comparison regardless of the original timezone
-	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	return time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 // FormatDuration formats seconds into a human-readable string like "2h 30m" or "45m".

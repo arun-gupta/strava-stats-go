@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -58,6 +60,32 @@ type FetchActivitiesOptions struct {
 	PerPage *int  // Number of items per page (default: 30, max: 200)
 }
 
+// APIError represents an error from the Strava API.
+type APIError struct {
+	StatusCode int
+	Message    string
+	RetryAfter time.Duration // For rate limit errors
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("Strava API error (status %d): %s", e.StatusCode, e.Message)
+}
+
+// IsRateLimit returns true if this is a rate limit error (429).
+func (e *APIError) IsRateLimit() bool {
+	return e.StatusCode == http.StatusTooManyRequests
+}
+
+// IsUnauthorized returns true if this is an unauthorized error (401).
+func (e *APIError) IsUnauthorized() bool {
+	return e.StatusCode == http.StatusUnauthorized
+}
+
+// IsServerError returns true if this is a server error (5xx).
+func (e *APIError) IsServerError() bool {
+	return e.StatusCode >= 500 && e.StatusCode < 600
+}
+
 // FetchActivities retrieves the authenticated athlete's activities from Strava API.
 func (c *Client) FetchActivities(ctx context.Context, token *oauth2.Token, opts *FetchActivitiesOptions) ([]Activity, error) {
 	client := c.OAuthConfig.Client(ctx, token)
@@ -93,8 +121,62 @@ func (c *Client) FetchActivities(ctx context.Context, token *oauth2.Token, opts 
 	}
 	defer resp.Body.Close()
 
+	// Handle different HTTP status codes
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch activities, status: %s", resp.Status)
+		apiErr := &APIError{
+			StatusCode: resp.StatusCode,
+		}
+
+		// Read error response body if available
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr == nil && len(body) > 0 {
+			// Try to parse as JSON error response
+			var errorResp struct {
+				Message string `json:"message"`
+				Errors  []struct {
+					Resource string `json:"resource"`
+					Field    string `json:"field"`
+					Code     string `json:"code"`
+				} `json:"errors"`
+			}
+			if json.Unmarshal(body, &errorResp) == nil && errorResp.Message != "" {
+				apiErr.Message = errorResp.Message
+			} else {
+				apiErr.Message = string(body)
+			}
+		} else {
+			apiErr.Message = resp.Status
+		}
+
+		// Handle rate limiting (429)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			// Check for Retry-After header
+			if retryAfterStr := resp.Header.Get("Retry-After"); retryAfterStr != "" {
+				if seconds, err := strconv.Atoi(retryAfterStr); err == nil {
+					apiErr.RetryAfter = time.Duration(seconds) * time.Second
+				}
+			}
+			// Default retry after 60 seconds if not specified
+			if apiErr.RetryAfter == 0 {
+				apiErr.RetryAfter = 60 * time.Second
+			}
+			return nil, apiErr
+		}
+
+		// Handle unauthorized (401) - token may need refresh
+		if resp.StatusCode == http.StatusUnauthorized {
+			apiErr.Message = "Unauthorized: token may be expired or invalid"
+			return nil, apiErr
+		}
+
+		// Handle server errors (5xx)
+		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+			apiErr.Message = fmt.Sprintf("Strava API server error: %s", apiErr.Message)
+			return nil, apiErr
+		}
+
+		// Other errors
+		return nil, apiErr
 	}
 
 	var activities []Activity

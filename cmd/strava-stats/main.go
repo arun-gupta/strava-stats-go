@@ -37,7 +37,7 @@ func main() {
 	http.HandleFunc("/api/activities", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		
-		// Get token from session
+		// Get token from session (this automatically refreshes if expired)
 		token, err := authenticator.GetToken(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -48,10 +48,95 @@ func main() {
 		// Fetch activities from Strava API
 		activities, err := stravaClient.FetchActivities(r.Context(), token, nil)
 		if err != nil {
-			log.Printf("Failed to fetch activities: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
-			return
+			// Check if it's an API error with specific status code
+			if apiErr, ok := err.(*api.APIError); ok {
+				// Handle rate limiting (429)
+				if apiErr.IsRateLimit() {
+					log.Printf("Rate limit exceeded: %v, retry after: %v", apiErr.Message, apiErr.RetryAfter)
+					w.WriteHeader(http.StatusTooManyRequests)
+					response := map[string]interface{}{
+						"error":      "Rate limit exceeded. Please try again later.",
+						"message":    apiErr.Message,
+						"retry_after": int(apiErr.RetryAfter.Seconds()),
+					}
+					json.NewEncoder(w).Encode(response)
+					return
+				}
+
+				// Handle unauthorized (401) - try to refresh token and retry once
+				if apiErr.IsUnauthorized() {
+					log.Printf("Unauthorized error, attempting token refresh: %v", apiErr.Message)
+					// Get a fresh token (this will attempt refresh)
+					newToken, refreshErr := authenticator.GetToken(w, r)
+					if refreshErr != nil {
+						log.Printf("Token refresh failed: %v", refreshErr)
+						w.WriteHeader(http.StatusUnauthorized)
+						json.NewEncoder(w).Encode(map[string]string{
+							"error": "Unauthorized: token refresh failed. Please log in again.",
+						})
+						return
+					}
+
+					// Retry the request with the refreshed token
+					activities, err = stravaClient.FetchActivities(r.Context(), newToken, nil)
+					if err != nil {
+						log.Printf("Failed to fetch activities after token refresh: %v", err)
+						// Check if it's still an API error
+						if retryApiErr, ok := err.(*api.APIError); ok {
+							if retryApiErr.IsUnauthorized() {
+								w.WriteHeader(http.StatusUnauthorized)
+								json.NewEncoder(w).Encode(map[string]string{
+									"error": "Unauthorized: please log in again.",
+								})
+								return
+							}
+							// Handle other API errors from retry
+							if retryApiErr.IsServerError() {
+								w.WriteHeader(http.StatusBadGateway)
+								json.NewEncoder(w).Encode(map[string]string{
+									"error": "Strava API is temporarily unavailable. Please try again later.",
+								})
+								return
+							}
+							w.WriteHeader(retryApiErr.StatusCode)
+							json.NewEncoder(w).Encode(map[string]string{
+								"error": retryApiErr.Message,
+							})
+							return
+						}
+						// Generic error from retry
+						log.Printf("Failed to fetch activities after token refresh: %v", err)
+						w.WriteHeader(http.StatusInternalServerError)
+						json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
+						return
+					}
+					// Success after refresh, continue with activities
+					log.Printf("Successfully fetched activities after token refresh")
+				} else if apiErr.IsServerError() {
+					// Handle server errors (5xx)
+					log.Printf("Strava API server error: %v", apiErr.Message)
+					w.WriteHeader(http.StatusBadGateway)
+					json.NewEncoder(w).Encode(map[string]string{
+						"error": "Strava API is temporarily unavailable. Please try again later.",
+						"message": apiErr.Message,
+					})
+					return
+				} else {
+					// Other API errors
+					log.Printf("API error: %v", apiErr)
+					w.WriteHeader(apiErr.StatusCode)
+					json.NewEncoder(w).Encode(map[string]string{
+						"error": apiErr.Message,
+					})
+					return
+				}
+			} else {
+				// Generic error (not an APIError)
+				log.Printf("Failed to fetch activities: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
+				return
+			}
 		}
 
 		// Normalize activities (last 7 days by default)
