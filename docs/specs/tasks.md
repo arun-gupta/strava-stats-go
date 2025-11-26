@@ -22,10 +22,10 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 3.1: Create HTML templates for the dashboard structure (Tabbed Layout with conditional visibility: Overview, Duration, Heatmap, Running Stats, Trends). Add Coming Soon to the sections that are to be implemented.
 - [x] 3.2: Show a summary as three horizontal cards: start date to end date, total number of activities, total moving time.
 - [x] 3.3: Build Strava API client to fetch activities (`/athlete/activities`).
-- [ ] 3.4: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default. If a workout occurred on a day, independent of timezone, it must be included.
-- [ ] 3.5: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
-- [ ] 3.6: Wire up frontend to fetch data from Go backend and fix up summary cards.
-- [ ] 3.7: Render a simple list of activities (default last 7 days based on local date) on the dashboard, in the overview tab.
+- [x] 3.4: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default. If a workout occurred on a day, independent of timezone, it must be included.
+- [x] 3.5: Wire up frontend to fetch data from Go backend and fix up summary cards.
+- [ ] 3.6: Render a simple list of activities (default last 7 days based on local date) on the dashboard, in the overview tab.
+- [ ] 3.7: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
 
 ## Phase 4: Core Visualizations (Distributions)
 - [ ] 4.1: Integrate JavaScript charting library (e.g., Chart.js).

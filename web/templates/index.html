@@ -169,10 +169,60 @@
             evt.currentTarget.className += " active";
         }
         
-        // Open default tab on load
+        // Fetch activities data from API
+        async function fetchActivities() {
+            try {
+                const response = await fetch('/api/activities');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Handle JSON error response
+                    const errorMessage = data.error || response.statusText || 'Unknown error';
+                    console.error('API error:', response.status, errorMessage);
+                    throw new Error(errorMessage);
+                }
+                
+                // Update summary cards
+                updateSummaryCards(data);
+            } catch (error) {
+                console.error('Error fetching activities:', error);
+                // Show error in summary cards (truncate long messages)
+                const errorMsg = error.message || 'Error';
+                const shortMsg = errorMsg.length > 20 ? errorMsg.substring(0, 17) + '...' : errorMsg;
+                document.querySelector('.card:nth-child(1) .value').textContent = shortMsg;
+                document.querySelector('.card:nth-child(2) .value').textContent = shortMsg;
+                document.querySelector('.card:nth-child(3) .value').textContent = shortMsg;
+            }
+        }
+        
+        function updateSummaryCards(data) {
+            // Update Date Range card
+            const dateRangeCard = document.querySelector('.card:nth-child(1) .value');
+            if (dateRangeCard) {
+                dateRangeCard.textContent = data.dateRange || 'No activities';
+            }
+            
+            // Update Total Activities card
+            const activitiesCard = document.querySelector('.card:nth-child(2) .value');
+            if (activitiesCard) {
+                activitiesCard.textContent = data.totalActivities || 0;
+            }
+            
+            // Update Moving Time card
+            const movingTimeCard = document.querySelector('.card:nth-child(3) .value');
+            if (movingTimeCard) {
+                movingTimeCard.textContent = data.totalMovingTime || '0h 0m';
+            }
+        }
+        
+        // Open default tab on load and fetch data if authenticated
         window.onload = function() {
             if (document.querySelector('.tablinks')) {
                 document.querySelector('.tablinks').click();
+            }
+            // Fetch activities if user is authenticated (summary cards are visible)
+            if (document.querySelector('.summary-cards')) {
+                fetchActivities();
             }
         };
     </script>
@@ -202,15 +252,15 @@
             <div class="summary-cards">
                 <div class="card">
                     <h4>Date Range</h4>
-                    <div class="value">Nov 18 - Nov 25</div>
+                    <div class="value">Loading...</div>
                 </div>
                 <div class="card">
                     <h4>Total Activities</h4>
-                    <div class="value">12</div>
+                    <div class="value">Loading...</div>
                 </div>
                 <div class="card">
                     <h4>Moving Time</h4>
-                    <div class="value">5h 30m</div>
+                    <div class="value">Loading...</div>
                 </div>
             </div>
 

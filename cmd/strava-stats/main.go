@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/arungupta/strava-stats-go/internal/api"
 	"github.com/arungupta/strava-stats-go/internal/auth"
 	"github.com/arungupta/strava-stats-go/internal/config"
 	"golang.org/x/oauth2"
@@ -23,11 +24,84 @@ func main() {
 	// Initialize OAuth authenticator
 	authenticator := auth.NewAuthenticator(cfg)
 
+	// Initialize Strava API client
+	stravaClient := api.NewClient(authenticator.StravaAPIURL, authenticator.Config)
+
 	port := fmt.Sprintf(":%s", cfg.Port)
 
 	http.HandleFunc("/auth/login", authenticator.LoginHandler)
 	http.HandleFunc("/auth/logout", authenticator.LogoutHandler)
 	http.HandleFunc("/auth/callback", authenticator.CallbackHandler)
+	
+	// API endpoint for fetching activities
+	http.HandleFunc("/api/activities", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		
+		// Get token from session
+		token, err := authenticator.GetToken(w, r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: " + err.Error()})
+			return
+		}
+
+		// Fetch activities from Strava API
+		activities, err := stravaClient.FetchActivities(r.Context(), token, nil)
+		if err != nil {
+			log.Printf("Failed to fetch activities: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
+			return
+		}
+
+		// Normalize activities (last 7 days by default)
+		normalized := api.NormalizeActivities(activities, nil)
+
+		// Calculate summary statistics
+		var totalMovingTime int
+		var earliestDate, latestDate *time.Time
+		
+		for _, activity := range normalized {
+			totalMovingTime += activity.MovingTime
+			
+			// Track date range
+			if earliestDate == nil || activity.LocalDate.Before(*earliestDate) {
+				date := activity.LocalDate
+				earliestDate = &date
+			}
+			if latestDate == nil || activity.LocalDate.After(*latestDate) {
+				date := activity.LocalDate
+				latestDate = &date
+			}
+		}
+
+		// Format date range
+		var dateRange string
+		if earliestDate != nil && latestDate != nil {
+			dateRange = fmt.Sprintf("%s - %s", 
+				earliestDate.Format("Jan 2"), 
+				latestDate.Format("Jan 2"))
+		} else {
+			dateRange = "No activities"
+		}
+
+		// Format total moving time
+		movingTimeFormatted := api.FormatDuration(totalMovingTime)
+
+		// Prepare response
+		response := map[string]interface{}{
+			"dateRange":      dateRange,
+			"totalActivities": len(normalized),
+			"totalMovingTime": movingTimeFormatted,
+			"activities":     normalized,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("Failed to encode response: %v", err)
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		session, _ := authenticator.Store.Get(r, "strava-session")
 		var data struct {
