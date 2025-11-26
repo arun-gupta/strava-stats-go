@@ -406,6 +406,42 @@
             z-index: 1000;
             display: none;
         }
+        
+        /* Trends Controls Styles */
+        .trends-controls {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .trends-period {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .trends-period span {
+            font-weight: 500;
+            color: #666;
+        }
+        .trends-period button {
+            padding: 8px 16px;
+            border: 1px solid #fc4c02;
+            background: white;
+            color: #fc4c02;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .trends-period button.active {
+            background: #fc4c02;
+            color: white;
+        }
+        .trends-period button:hover {
+            background: rgba(252, 76, 2, 0.1);
+        }
+        .trends-period button.active:hover {
+            background: #e34402;
+        }
     </style>
     <script>
         function openTab(evt, tabName) {
@@ -482,6 +518,9 @@
                 
                 // Fetch and update running stats
                 fetchRunningStats();
+                
+                // Fetch and update trends
+                fetchTrends();
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards (show full error in console, truncated in UI)
@@ -1230,6 +1269,286 @@
             applyHeatmapFilter();
         }
         
+        // Trends state
+        let currentTrendsPeriod = 'daily'; // 'daily', 'weekly', 'monthly'
+        let distanceTrendChartInstance = null;
+        let paceTrendChartInstance = null;
+        
+        // Fetch trends data from backend
+        async function fetchTrends() {
+            try {
+                const url = `/api/trends?period=${currentTrendsPeriod}&running_only=false`;
+                const response = await fetch(url);
+                
+                // Check content type
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Expected JSON but got:', contentType, text.substring(0, 200));
+                    throw new Error(`Server returned ${contentType} instead of JSON. Status: ${response.status}`);
+                }
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setTimeout(() => {
+                            window.location.href = '/auth/login';
+                        }, 2000);
+                        return;
+                    }
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                updateTrends(data);
+            } catch (error) {
+                console.error('Error fetching trends:', error);
+                const distanceCtx = document.getElementById('distanceTrendChart');
+                const paceCtx = document.getElementById('paceTrendChart');
+                if (distanceCtx && distanceCtx.parentElement) {
+                    distanceCtx.parentElement.innerHTML = '<div class="error">Error loading trends: ' + (error.message || 'Unknown error') + '</div>';
+                }
+                if (paceCtx && paceCtx.parentElement) {
+                    paceCtx.parentElement.innerHTML = '<div class="error">Error loading trends: ' + (error.message || 'Unknown error') + '</div>';
+                }
+            }
+        }
+        
+        // Update trends display
+        function updateTrends(data) {
+            const trends = data.trends || {};
+            const points = trends.points || [];
+            
+            console.log('Updating trends with', points.length, 'data points');
+            
+            // Update distance trend chart
+            updateDistanceTrendChart(points);
+            
+            // Update pace trend chart
+            updatePaceTrendChart(points);
+        }
+        
+        // Update distance trend chart
+        function updateDistanceTrendChart(points) {
+            const ctx = document.getElementById('distanceTrendChart');
+            if (!ctx) {
+                console.warn('Distance trend chart canvas not found');
+                return;
+            }
+            
+            if (points.length === 0) {
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
+                }
+                return;
+            }
+            
+            const labels = points.map(p => {
+                // Format date based on period
+                const date = new Date(p.date + 'T00:00:00');
+                if (currentTrendsPeriod === 'monthly') {
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                } else if (currentTrendsPeriod === 'weekly') {
+                    return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+            });
+            const distances = points.map(p => p.distance_miles);
+            
+            // Destroy existing chart
+            if (distanceTrendChartInstance) {
+                distanceTrendChartInstance.destroy();
+                distanceTrendChartInstance = null;
+            }
+            
+            try {
+                distanceTrendChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Distance (miles)',
+                            data: distances,
+                            borderColor: '#fc4c02',
+                            backgroundColor: 'rgba(252, 76, 2, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const point = points[context.dataIndex];
+                                        return `Distance: ${point.distance_miles.toFixed(2)} mi (${point.count} activities)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Distance (miles)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating distance trend chart:', error);
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div class="error">Error rendering distance chart</div>';
+                }
+            }
+        }
+        
+        // Update pace trend chart
+        function updatePaceTrendChart(points) {
+            const ctx = document.getElementById('paceTrendChart');
+            if (!ctx) {
+                console.warn('Pace trend chart canvas not found');
+                return;
+            }
+            
+            if (points.length === 0) {
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
+                }
+                return;
+            }
+            
+            const labels = points.map(p => {
+                const date = new Date(p.date + 'T00:00:00');
+                if (currentTrendsPeriod === 'monthly') {
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                } else if (currentTrendsPeriod === 'weekly') {
+                    return 'Week of ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+            });
+            
+            // Convert pace strings (e.g., "10:08") to seconds for charting
+            const paces = points.map(p => {
+                if (!p.pace || p.pace === '-') return null;
+                const parts = p.pace.split(':');
+                if (parts.length === 2) {
+                    const minutes = parseInt(parts[0], 10);
+                    const seconds = parseInt(parts[1], 10);
+                    return minutes * 60 + seconds; // Total seconds per mile
+                }
+                return null;
+            }).filter(p => p !== null);
+            
+            // If no valid paces, show empty state
+            if (paces.length === 0) {
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No pace data available</div>';
+                }
+                return;
+            }
+            
+            // Destroy existing chart
+            if (paceTrendChartInstance) {
+                paceTrendChartInstance.destroy();
+                paceTrendChartInstance = null;
+            }
+            
+            try {
+                paceTrendChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Pace (min/mi)',
+                            data: paces,
+                            borderColor: '#fc4c02',
+                            backgroundColor: 'rgba(252, 76, 2, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const point = points[context.dataIndex];
+                                        return `Pace: ${point.pace} min/mi`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                reverse: true, // Lower is faster (better), so reverse the scale
+                                title: {
+                                    display: true,
+                                    text: 'Pace (seconds per mile)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        const minutes = Math.floor(value / 60);
+                                        const seconds = value % 60;
+                                        return `${minutes}:${String(seconds).padStart(2, '0')}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating pace trend chart:', error);
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div class="error">Error rendering pace chart</div>';
+                }
+            }
+        }
+        
+        // Update trends period (daily, weekly, monthly)
+        function updateTrendsPeriod(period) {
+            currentTrendsPeriod = period;
+            
+            // Update button states
+            document.getElementById('trends-daily-btn').classList.toggle('active', period === 'daily');
+            document.getElementById('trends-weekly-btn').classList.toggle('active', period === 'weekly');
+            document.getElementById('trends-monthly-btn').classList.toggle('active', period === 'monthly');
+            
+            // Re-fetch trends with new period
+            fetchTrends();
+        }
+        
         // Open default tab on load and fetch data if authenticated
         window.onload = function() {
             if (document.querySelector('.tablinks')) {
@@ -1381,7 +1700,32 @@
 
             <div id="Trends" class="tabcontent">
                 <h3>Trends</h3>
-                <p>Coming Soon</p>
+                
+                <!-- Period Toggle -->
+                <div class="trends-controls">
+                    <div class="trends-period">
+                        <span>Period:</span>
+                        <button id="trends-daily-btn" class="active" onclick="updateTrendsPeriod('daily')">Daily</button>
+                        <button id="trends-weekly-btn" onclick="updateTrendsPeriod('weekly')">Weekly</button>
+                        <button id="trends-monthly-btn" onclick="updateTrendsPeriod('monthly')">Monthly</button>
+                    </div>
+                </div>
+
+                <!-- Distance Trend Chart -->
+                <div class="chart-wrapper">
+                    <h4>Distance Trend</h4>
+                    <div class="chart-container">
+                        <canvas id="distanceTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Pace Trend Chart -->
+                <div class="chart-wrapper">
+                    <h4>Pace Trend</h4>
+                    <div class="chart-container">
+                        <canvas id="paceTrendChart"></canvas>
+                    </div>
+                </div>
             </div>
 
         {{else}}

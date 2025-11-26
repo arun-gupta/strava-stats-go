@@ -296,6 +296,106 @@ func main() {
 		log.Printf("Running stats: successfully returned stats: %d total runs", stats.TotalRuns)
 	})
 
+	// API endpoint for trends data
+	http.HandleFunc("/api/trends", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Get query parameters
+		period := r.URL.Query().Get("period")
+		if period == "" {
+			period = "daily" // default to daily
+		}
+		if period != "daily" && period != "weekly" && period != "monthly" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid period. Must be 'daily', 'weekly', or 'monthly'"})
+			return
+		}
+
+		runningOnly := r.URL.Query().Get("running_only") == "true"
+
+		// Get token from session
+		token, err := authenticator.GetToken(w, r)
+		if err != nil {
+			log.Printf("Trends: unauthorized: %v", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: " + err.Error()})
+			return
+		}
+
+		log.Printf("Trends: fetching activities for period=%s, runningOnly=%v", period, runningOnly)
+
+		// Fetch activities (same as main endpoint - no date filtering at API level)
+		activities, err := stravaClient.FetchActivities(r.Context(), token, nil)
+		if err != nil {
+			if apiErr, ok := err.(*api.APIError); ok {
+				if apiErr.IsRateLimit() {
+					w.WriteHeader(http.StatusTooManyRequests)
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"error":      "Rate limit exceeded. Please try again later.",
+						"message":    apiErr.Message,
+						"retry_after": int(apiErr.RetryAfter.Seconds()),
+					})
+					return
+				}
+				if apiErr.IsUnauthorized() {
+					newToken, getErr := authenticator.GetToken(w, r)
+					if getErr == nil {
+						activities, err = stravaClient.FetchActivities(r.Context(), newToken, nil)
+						if err != nil {
+							w.WriteHeader(http.StatusUnauthorized)
+							json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: token refresh failed"})
+							return
+						}
+					} else {
+						w.WriteHeader(http.StatusUnauthorized)
+						json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: " + apiErr.Message})
+						return
+					}
+				} else if apiErr.IsServerError() {
+					w.WriteHeader(http.StatusBadGateway)
+					json.NewEncoder(w).Encode(map[string]string{
+						"error": "Strava API is temporarily unavailable. Please try again later.",
+					})
+					return
+				} else {
+					w.WriteHeader(apiErr.StatusCode)
+					json.NewEncoder(w).Encode(map[string]string{"error": apiErr.Message})
+					return
+				}
+			} else {
+				log.Printf("Trends: failed to fetch activities: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
+				return
+			}
+		}
+
+		log.Printf("Trends: fetched %d activities", len(activities))
+
+		// Normalize activities (same date range as main endpoint)
+		normalized := api.NormalizeActivities(activities, nil)
+		log.Printf("Trends: normalized to %d activities", len(normalized))
+
+		// Calculate trends
+		trendData := api.CalculateTrends(normalized, period, runningOnly)
+
+		// Prepare response
+		response := map[string]interface{}{
+			"period":      period,
+			"runningOnly": runningOnly,
+			"trends":      trendData,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("Trends: failed to encode response: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to encode response: " + err.Error()})
+			return
+		}
+
+		log.Printf("Trends: successfully returned %d data points for period=%s", len(trendData.Points), period)
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Don't handle API routes - they should be handled by their specific handlers
 		if strings.HasPrefix(r.URL.Path, "/api/") {

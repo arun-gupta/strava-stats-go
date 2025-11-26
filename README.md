@@ -2,9 +2,6 @@
 
 A web application that authenticates users via Strava, fetches their activity history, and presents read-only interactive analytics.
 
-## Status
-🚧 **Under Construction** - currently in development (Completed Phase 2: Authentication).
-
 ## Getting Started
 
 ### Prerequisites
@@ -65,24 +62,60 @@ To start the application and automatically open it in your browser (at http://lo
 ## Features
 
 ### ✅ Implemented
+
+#### Phase 1-2: Foundation & Authentication
 *   **Project Foundation**: Basic HTTP server, standard directory structure (`cmd/`, `internal/`, `web/`), and configuration management (`.env`).
 *   **Secure Authentication**:
     *   Full OAuth2 flow with Strava (Redirect & Callback).
-    *   Secure session management using cookies.
+    *   CSRF protection with cryptographically random state parameters.
+    *   Secure session management using cookies with required `SESSION_SECRET`.
     *   Automatic token refresh logic to maintain active sessions.
-*   **Basic Dashboard**:
+*   **User Interface**:
     *   Welcome page with "Connect with Strava" button.
     *   Authenticated state display ("Logged in as [Name]").
+    *   Strava-themed header with branding and logout functionality.
 
-### 🚀 Planned
-*   **Activity Integration**: Fetching activities from Strava API.
-*   **Interactive Dashboard**:
-    *   **Overview**: Activity counts and distribution.
-    *   **Duration**: Moving time analytics.
-    *   **Heatmaps**: Calendar-based training consistency visualization.
-    *   **Running Stats**: PR tracking and distance histograms.
-    *   **Trends**: Pace and distance progression over time.
-*   **Data Handling**: Local timezone awareness and metric/imperial unit support.
+#### Phase 3: Connectivity & Activity List
+*   **Strava API Integration**:
+    *   Activity fetching with pagination support.
+    *   Robust error handling (rate limits, unauthorized, server errors).
+    *   Automatic token refresh and retry logic.
+*   **Data Normalization**:
+    *   Timezone-independent date alignment using `start_date_local`.
+    *   Unit standardization (meters to km/miles, seconds to formatted duration).
+    *   Default 7-day activity window.
+*   **Dashboard Summary**:
+    *   Date range display (start to end date).
+    *   Total activities count.
+    *   Total moving time.
+
+#### Phase 4: Core Visualizations
+*   **Overview Tab**:
+    *   Activity counts distribution (pie/doughnut chart) by sport type.
+*   **Duration Tab**:
+    *   Moving time distribution (pie/doughnut chart) by sport type.
+
+#### Phase 5: Advanced Analytics
+*   **Heatmap Tab**:
+    *   Calendar-based activity heatmap showing training consistency.
+    *   Intensity levels based on moving time.
+    *   Toggle between "All Activities" and "Running Only" views.
+*   **Running Stats Tab**:
+    *   Running summary statistics (Total Runs, 10K+ Runs, Total Distance, Average Pace).
+    *   Personal Records (Fastest 10K, Longest Run).
+    *   Distance distribution histogram (1-mile bins).
+*   **Trends Tab**:
+    *   Distance trend line chart over time.
+    *   Pace trend line chart over time.
+    *   Period toggle (Daily, Weekly, Monthly).
+    *   Shows all activities (no filter toggle).
+
+### 🚀 Planned (Phase 6)
+*   **Date Range Picker**: Preset options (Last 7 Days, 30 days, 90 days, YTD) and custom date selection.
+*   **Unit Toggle**: Switch between Metric and Imperial units.
+*   **Enhanced Error Handling**: Empty states, improved API failure messages.
+*   **Performance Optimization**: Concurrent data fetching, optimized initial load.
+*   **Responsive Design**: Mobile-friendly dashboard layout.
 
 ## Project Structure
 *   `cmd/`: Application entry points.
