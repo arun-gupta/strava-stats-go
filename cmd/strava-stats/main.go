@@ -201,7 +201,112 @@ func main() {
 			return
 		}
 	})
+
+	// API endpoint for running statistics
+	http.HandleFunc("/api/running-stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Get token from session
+		token, err := authenticator.GetToken(w, r)
+		if err != nil {
+			log.Printf("Running stats: unauthorized: %v", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: " + err.Error()})
+			return
+		}
+		
+		log.Printf("Running stats: fetching activities for user")
+
+		// Use the same date range logic as the main activities endpoint
+		// Limit API call to last 7 days to avoid fetching all activities
+		// Calculate timestamp for 7 days ago
+		sevenDaysAgo := time.Now().AddDate(0, 0, -7).Unix()
+		opts := &api.FetchActivitiesOptions{
+			After: &sevenDaysAgo,
+		}
+		activities, err := stravaClient.FetchActivities(r.Context(), token, opts)
+		if err != nil {
+			if apiErr, ok := err.(*api.APIError); ok {
+				if apiErr.IsRateLimit() {
+					w.WriteHeader(http.StatusTooManyRequests)
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"error":      "Rate limit exceeded. Please try again later.",
+						"message":    apiErr.Message,
+						"retry_after": int(apiErr.RetryAfter.Seconds()),
+					})
+					return
+				}
+					if apiErr.IsUnauthorized() {
+						// Try to refresh token and retry once
+						newToken, getErr := authenticator.GetToken(w, r)
+						if getErr == nil {
+							activities, err = stravaClient.FetchActivities(r.Context(), newToken, opts)
+						if err != nil {
+							w.WriteHeader(http.StatusUnauthorized)
+							json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: token refresh failed"})
+							return
+						}
+					} else {
+						w.WriteHeader(http.StatusUnauthorized)
+						json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: " + apiErr.Message})
+						return
+					}
+				} else if apiErr.IsServerError() {
+					w.WriteHeader(http.StatusBadGateway)
+					json.NewEncoder(w).Encode(map[string]string{
+						"error": "Strava API is temporarily unavailable. Please try again later.",
+					})
+					return
+				} else {
+					w.WriteHeader(apiErr.StatusCode)
+					json.NewEncoder(w).Encode(map[string]string{"error": apiErr.Message})
+					return
+				}
+			} else {
+				log.Printf("Running stats: failed to fetch activities: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch activities: " + err.Error()})
+				return
+			}
+		}
+		
+		log.Printf("Running stats: fetched %d activities", len(activities))
+
+		// Normalize activities using the same date range as the main endpoint (default 7 days)
+		normalized := api.NormalizeActivities(activities, nil)
+		log.Printf("Running stats: normalized to %d activities", len(normalized))
+
+		// Calculate running statistics
+		stats := api.CalculateRunningStats(normalized)
+		prs := api.CalculatePersonalRecords(normalized)
+		
+		// Generate distance histogram (use miles for now, can be made configurable)
+		histogram := api.GenerateDistanceHistogram(normalized, true) // true = use miles
+
+		// Prepare response - always return valid structure even if empty
+		response := map[string]interface{}{
+			"stats":     stats,
+			"prs":       prs,
+			"histogram": histogram,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("Running stats: failed to encode response: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to encode response: " + err.Error()})
+			return
+		}
+		
+		log.Printf("Running stats: successfully returned stats: %d total runs", stats.TotalRuns)
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Don't handle API routes - they should be handled by their specific handlers
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+		
 		session, _ := authenticator.Store.Get(r, "strava-session")
 		var data struct {
 			Authenticated bool

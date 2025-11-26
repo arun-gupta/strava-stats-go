@@ -320,6 +320,87 @@
             color: white;
             padding: 8px 12px;
             border-radius: 4px;
+        }
+        
+        /* Running Stats Styles */
+        .running-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fc4c02;
+        }
+        .pr-section {
+            margin-bottom: 30px;
+        }
+        .pr-section h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .pr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .pr-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .pr-card h5 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
+        }
+        .pr-pace {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fc4c02;
+            margin-bottom: 10px;
+        }
+        .pr-details {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .pr-details div {
+            margin-bottom: 4px;
+        }
+        .pr-name {
+            font-size: 0.8rem;
+            color: #999;
+            font-style: italic;
+            margin-top: 8px;
+        }
+        .no-prs, .loading, .error {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
             font-size: 0.85rem;
             pointer-events: none;
             z-index: 1000;
@@ -398,6 +479,9 @@
                 
                 // Update heatmap
                 updateHeatmap(data.activities || []);
+                
+                // Fetch and update running stats
+                fetchRunningStats();
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards (show full error in console, truncated in UI)
@@ -952,6 +1036,179 @@
             renderHeatmap(filtered);
         }
         
+        // Fetch running statistics from backend
+        async function fetchRunningStats() {
+            try {
+                const response = await fetch('/api/running-stats');
+                
+                // Check content type to ensure we got JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    // If we got HTML, it's likely an error page
+                    const text = await response.text();
+                    console.error('Expected JSON but got:', contentType, text.substring(0, 200));
+                    throw new Error(`Server returned ${contentType} instead of JSON. Status: ${response.status}`);
+                }
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Unauthorized - redirect to login
+                        setTimeout(() => {
+                            window.location.href = '/auth/login';
+                        }, 2000);
+                        return;
+                    }
+                    // Try to parse error response
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    } catch (e) {
+                        // Ignore JSON parse errors - we already checked content type
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                updateRunningStats(data);
+            } catch (error) {
+                console.error('Error fetching running stats:', error);
+                // Show error in summary cards
+                const totalRunsEl = document.getElementById('total-runs');
+                if (totalRunsEl) {
+                    totalRunsEl.textContent = 'Error';
+                    totalRunsEl.title = error.message || 'Error loading data';
+                }
+            }
+        }
+        
+        // Update running statistics display
+        function updateRunningStats(data) {
+            console.log('updateRunningStats called with data:', data);
+            const stats = data.stats || {};
+            const histogram = data.histogram || {};
+            
+            console.log('Parsed data:', { stats, histogram });
+            
+            // Update summary statistics
+            const totalRunsEl = document.getElementById('total-runs');
+            const runsOver10kEl = document.getElementById('runs-over-10k');
+            const totalDistanceEl = document.getElementById('total-distance');
+            const averagePaceEl = document.getElementById('average-pace');
+            const fastest10kEl = document.getElementById('fastest-10k');
+            const longestRunEl = document.getElementById('longest-run');
+            
+            if (totalRunsEl) {
+                totalRunsEl.textContent = stats.total_runs || 0;
+            }
+            if (runsOver10kEl) {
+                runsOver10kEl.textContent = stats.runs_over_10k || 0;
+            }
+            
+            // Format total distance
+            const totalDistanceMiles = stats.total_distance_miles || 0;
+            if (totalDistanceEl) {
+                if (totalDistanceMiles > 0) {
+                    totalDistanceEl.textContent = totalDistanceMiles.toFixed(1) + ' mi';
+                } else {
+                    totalDistanceEl.textContent = '-';
+                }
+            }
+            
+            // Update average pace
+            if (averagePaceEl) {
+                averagePaceEl.textContent = stats.average_pace || '-';
+            }
+            
+            // Update Fastest 10K (from stats if available)
+            if (fastest10kEl) {
+                fastest10kEl.textContent = '-';
+            }
+            
+            // Update Longest Run (from stats if available)
+            if (longestRunEl) {
+                longestRunEl.textContent = '-';
+            }
+            
+            // Update distance histogram
+            updateDistanceHistogram(histogram);
+            
+            console.log('Running stats updated successfully:', {
+                totalRuns: stats.total_runs,
+                histogramBins: histogram.bins ? histogram.bins.length : 0
+            });
+        }
+        
+        // Update distance histogram chart
+        function updateDistanceHistogram(histogram) {
+            const ctx = document.getElementById('distanceHistogramChart');
+            if (!ctx) {
+                console.warn('Distance histogram canvas not found');
+                return;
+            }
+            
+            const bins = histogram.bins || [];
+            console.log('Updating histogram with', bins.length, 'bins');
+            
+            if (bins.length === 0) {
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div class="empty-state">No running data available</div>';
+                }
+                return;
+            }
+            
+            const labels = bins.map(bin => bin.range);
+            const data = bins.map(bin => bin.count);
+            
+            // Destroy existing chart if it exists
+            if (window.distanceHistogramChart && typeof window.distanceHistogramChart.destroy === 'function') {
+                window.distanceHistogramChart.destroy();
+            }
+            
+            window.distanceHistogramChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Runs',
+                        data: data,
+                        backgroundColor: 'rgba(255, 87, 34, 0.8)',
+                        borderColor: 'rgba(255, 87, 34, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const bin = bins[context.dataIndex];
+                                    return `${bin.count} runs (${bin.distance_miles.toFixed(1)} mi total)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         // Update heatmap filter
         function updateHeatmapFilter(filter) {
             currentHeatmapFilter = filter;
@@ -1075,7 +1332,42 @@
 
             <div id="RunningStats" class="tabcontent">
                 <h3>Running Stats</h3>
-                <p>Coming Soon</p>
+                
+                <!-- Running Summary Statistics -->
+                <div class="running-summary">
+                    <div class="stat-card">
+                        <h4>Total Runs</h4>
+                        <div class="stat-value" id="total-runs">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>10K+ Runs</h4>
+                        <div class="stat-value" id="runs-over-10k">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Distance</h4>
+                        <div class="stat-value" id="total-distance">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Avg Pace</h4>
+                        <div class="stat-value" id="average-pace">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Fastest 10K</h4>
+                        <div class="stat-value" id="fastest-10k">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Longest Run</h4>
+                        <div class="stat-value" id="longest-run">-</div>
+                    </div>
+                </div>
+
+                <!-- Distance Histogram -->
+                <div class="chart-wrapper">
+                    <h4>Distance Distribution</h4>
+                    <div class="chart-container">
+                        <canvas id="distanceHistogramChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div id="Trends" class="tabcontent">
