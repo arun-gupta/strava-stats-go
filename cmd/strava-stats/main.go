@@ -26,20 +26,27 @@ func main() {
 	port := fmt.Sprintf(":%s", cfg.Port)
 
 	http.HandleFunc("/auth/login", authenticator.LoginHandler)
+	http.HandleFunc("/auth/logout", authenticator.LogoutHandler)
 	http.HandleFunc("/auth/callback", authenticator.CallbackHandler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		session, _ := authenticator.Store.Get(r, "strava-session")
 		var data struct {
 			Authenticated bool
 			Name          string
+			ProfileURL    string
 		}
 
 		if tokenStr, ok := session.Values["token"].(string); ok && tokenStr != "" {
 			data.Authenticated = true
 			if name, ok := session.Values["athlete_name"].(string); ok && name != "" {
 				data.Name = name
-			} else {
-				// Self-healing: Name missing, try to fetch it
+			}
+			if profile, ok := session.Values["athlete_profile"].(string); ok && profile != "" {
+				data.ProfileURL = profile
+			}
+
+			// Self-healing: Name or Profile missing, try to fetch it
+			if data.Name == "" || data.ProfileURL == "" {
 				var token oauth2.Token
 				if err := json.Unmarshal([]byte(tokenStr), &token); err == nil {
 					if athlete, err := authenticator.FetchAthlete(r.Context(), &token); err == nil {
@@ -50,10 +57,14 @@ func main() {
 						if name != "" {
 							data.Name = name
 							session.Values["athlete_name"] = name
-							session.Save(r, w)
 						}
+						if athlete.Profile != "" {
+							data.ProfileURL = athlete.Profile
+							session.Values["athlete_profile"] = athlete.Profile
+						}
+						session.Save(r, w)
 					} else {
-						log.Printf("Failed to auto-recover athlete name: %v", err)
+						log.Printf("Failed to auto-recover athlete data: %v", err)
 					}
 				}
 			}

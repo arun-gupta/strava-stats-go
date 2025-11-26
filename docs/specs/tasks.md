@@ -16,23 +16,23 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 2.4: Implement session management (store tokens).
 - [x] 2.5: Implement token refresh logic to maintain active sessions.
 - [x] 2.6: Update dashboard to display "Logged in as [User Name]" after auth.
-- [ ] 2.7: Add a top-level Strava colored banner with octocat logo pointing to GitHub repo, athlete photo, and a Logout button.
+- [x] 2.7: Add a top-level Strava colored banner with title on the left and octocat logo pointing to GitHub repo, athlete photo, and a Logout button on the right.
 
 ## Phase 3: Connectivity & Activity List
-- [ ] 3.1: Build Strava API client to fetch activities (`/athlete/activities`).
-- [ ] 3.2: Implement rate-limiting handling (respect HTTP 429 headers).
-- [ ] 3.3: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default.
-- [ ] 3.3: Show a summary as three horizontal cards: start date to end date, total number of activities, total moving time. 
-- [ ] 3.4: Create HTML templates for the dashboard structure (Tabbed Layout with conditional visibility: Overview, Duration, Heatmap, Running Stats, Trends).
-- [ ] 3.5: Wire up frontend to fetch data from Go backend.
-- [ ] 3.6: Render a simple list of activities (default last 7 days based on local date) on the dashboard.
+- [x] 3.1: Create HTML templates for the dashboard structure (Tabbed Layout with conditional visibility: Overview, Duration, Heatmap, Running Stats, Trends). Add Coming Soon to the sections that are to be implemented.
+- [x] 3.2: Show a summary as three horizontal cards: start date to end date, total number of activities, total moving time.
+- [x] 3.3: Build Strava API client to fetch activities (`/athlete/activities`).
+- [ ] 3.4: Implement data normalization (parse `start_date_local` for date alignment, unit standardization). Use Last 7 Days as default. If a workout occurred on a day, independent of timezone, it must be included.
+- [ ] 3.5: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
+- [ ] 3.6: Wire up frontend to fetch data from Go backend and fix up summary cards.
+- [ ] 3.7: Render a simple list of activities (default last 7 days based on local date) on the dashboard, in the overview tab.
 
 ## Phase 4: Core Visualizations (Distributions)
-- [ ] 4.1: Calculate total activity counts.
-- [ ] 4.2: Calculate total moving time.
-- [ ] 4.3: Calculate splits by sport type.
-- [ ] 4.4: Integrate JavaScript charting library (e.g., Chart.js).
-- [ ] 4.5: Render Distributions (Pie/Donut charts) for Sport Types.
+- [ ] 4.1: Integrate JavaScript charting library (e.g., Chart.js).
+- [ ] 4.2: Calculate activity counts by sport type.
+- [ ] 4.3: Render Activity Counts Distribution (Pie/Donut chart) on the Overview tab.
+- [ ] 4.4: Calculate moving time by sport type.
+- [ ] 4.5: Render Moving Time Distribution (Pie/Donut chart) on the Duration tab.
 
 ## Phase 5: Advanced Analytics (Heatmaps & Trends)
 - [ ] 5.1: Implement pagination handling to retrieve full activity history.

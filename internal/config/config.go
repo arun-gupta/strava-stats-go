@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -21,11 +22,16 @@ func Load() (*Config, error) {
 		log.Println("No .env file found, relying on environment variables")
 	}
 
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		return nil, fmt.Errorf("SESSION_SECRET environment variable is required for secure session management. Please set it to a random string (e.g., 32+ characters)")
+	}
+
 	cfg := &Config{
 		StravaClientID:     os.Getenv("STRAVA_CLIENT_ID"),
 		StravaClientSecret: os.Getenv("STRAVA_CLIENT_SECRET"),
 		StravaCallbackURL:  getEnv("STRAVA_CALLBACK_URL", "http://localhost:8080/auth/callback"),
-		SessionSecret:      getEnv("SESSION_SECRET", "super-secret-key"),
+		SessionSecret:      sessionSecret,
 		Port:               getEnv("PORT", "8080"),
 	}
 

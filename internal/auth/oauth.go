@@ -2,10 +2,13 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/arungupta/strava-stats-go/internal/config"
@@ -41,7 +44,7 @@ func NewAuthenticator(cfg *config.Config) *Authenticator {
 		ClientID:     cfg.StravaClientID,
 		ClientSecret: cfg.StravaClientSecret,
 		RedirectURL:  cfg.StravaCallbackURL,
-		Scopes:       []string{"read,activity:read_all"},
+		Scopes:       []string{"read", "activity:read_all"},
 		Endpoint:     StravaEndpoint,
 	}
 	store := sessions.NewCookieStore([]byte(cfg.SessionSecret))
@@ -54,17 +57,75 @@ func NewAuthenticator(cfg *config.Config) *Authenticator {
 
 // LoginHandler redirects the user to Strava for authentication.
 func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	url := a.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	// Generate a cryptographically random state value for CSRF protection
+	stateBytes := make([]byte, 32)
+	if _, err := rand.Read(stateBytes); err != nil {
+		http.Error(w, "Failed to generate state: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	state := base64.URLEncoding.EncodeToString(stateBytes)
+
+	// Store the state in the session for verification in the callback
+	session, _ := a.Store.Get(r, "strava-session")
+	session.Values["oauth_state"] = state
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, "Failed to save session: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Strava requires comma-separated scopes, not space-separated (which the Go OAuth2 library uses)
+	// Build the authorization URL manually to ensure proper formatting
+	authURL, err := url.Parse(a.Config.Endpoint.AuthURL)
+	if err != nil {
+		http.Error(w, "Failed to parse auth URL: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	params := url.Values{}
+	params.Set("client_id", a.Config.ClientID)
+	params.Set("redirect_uri", a.Config.RedirectURL)
+	params.Set("response_type", "code")
+	params.Set("state", state)
+	params.Set("scope", strings.Join(a.Config.Scopes, ",")) // Comma-separated for Strava
+	params.Set("approval_prompt", "force") // Request offline access (refresh token)
+
+	authURL.RawQuery = params.Encode()
+	http.Redirect(w, r, authURL.String(), http.StatusTemporaryRedirect)
+}
+
+// LogoutHandler logs the user out by clearing the session.
+func (a *Authenticator) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "strava-session")
+	session.Options.MaxAge = -1
+	session.Save(r, w)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // CallbackHandler handles the redirect from Strava, exchanges code for token.
 func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) {
+	// Retrieve and verify the state parameter
 	state := r.URL.Query().Get("state")
-	if state != "state" {
-		http.Error(w, "State invalid", http.StatusBadRequest)
+	if state == "" {
+		http.Error(w, "State parameter missing", http.StatusBadRequest)
 		return
 	}
+
+	// Get the state from the session
+	session, _ := a.Store.Get(r, "strava-session")
+	sessionState, ok := session.Values["oauth_state"].(string)
+	if !ok || sessionState == "" {
+		http.Error(w, "State not found in session", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the state matches (CSRF protection)
+	if state != sessionState {
+		http.Error(w, "State mismatch - possible CSRF attack", http.StatusBadRequest)
+		return
+	}
+
+	// Clear the state from session after verification
+	delete(session.Values, "oauth_state")
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -79,8 +140,7 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Task 2.4: Store the token in session
-	session, _ := a.Store.Get(r, "strava-session")
+	// Task 2.4: Store the token in session (session already retrieved above)
 	tokenJson, err := json.Marshal(token)
 	if err != nil {
 		http.Error(w, "Failed to serialize token", http.StatusInternalServerError)
@@ -91,11 +151,14 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Extract athlete info
 	var displayName string
+	var profileURL string
+
 	if athlete := token.Extra("athlete"); athlete != nil {
 		if athleteMap, ok := athlete.(map[string]interface{}); ok {
 			firstname, _ := athleteMap["firstname"].(string)
 			lastname, _ := athleteMap["lastname"].(string)
 			username, _ := athleteMap["username"].(string)
+			profileURL, _ = athleteMap["profile"].(string)
 
 			displayName = strings.TrimSpace(fmt.Sprintf("%s %s", firstname, lastname))
 			if displayName == "" {
@@ -105,12 +168,17 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Fallback: Fetch if missing
-	if displayName == "" {
-		log.Println("Athlete data missing in token response, fetching from API...")
+	if displayName == "" || profileURL == "" {
+		log.Println("Athlete data missing or incomplete in token response, fetching from API...")
 		if fetchedAthlete, err := a.FetchAthlete(r.Context(), token); err == nil {
-			displayName = strings.TrimSpace(fmt.Sprintf("%s %s", fetchedAthlete.Firstname, fetchedAthlete.Lastname))
 			if displayName == "" {
-				displayName = fetchedAthlete.Username
+				displayName = strings.TrimSpace(fmt.Sprintf("%s %s", fetchedAthlete.Firstname, fetchedAthlete.Lastname))
+				if displayName == "" {
+					displayName = fetchedAthlete.Username
+				}
+			}
+			if profileURL == "" {
+				profileURL = fetchedAthlete.Profile
 			}
 		} else {
 			log.Printf("Failed to fetch athlete: %v", err)
@@ -121,6 +189,10 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 		session.Values["athlete_name"] = displayName
 	} else {
 		log.Println("Warning: Could not determine athlete name")
+	}
+
+	if profileURL != "" {
+		session.Values["athlete_profile"] = profileURL
 	}
 
 	if err := session.Save(r, w); err != nil {
