@@ -28,9 +28,9 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 3.7: Implement HTTP error handling (429 Rate Limits, 401 Unauthorized/Refresh, 5xx Server Errors).
 
 ## Phase 4: Core Visualizations (Distributions)
-- [ ] 4.1: Integrate JavaScript charting library (e.g., Chart.js).
-- [ ] 4.2: Calculate activity counts by sport type.
-- [ ] 4.3: Render Activity Counts Distribution (Pie/Donut chart) on the Overview tab.
+- [x] 4.1: Integrate JavaScript charting library (e.g., Chart.js).
+- [x] 4.2: Calculate activity counts by sport type.
+- [x] 4.3: Render Activity Counts Distribution (Pie/Donut chart) on the Overview tab.
 - [ ] 4.4: Calculate moving time by sport type.
 - [ ] 4.5: Render Moving Time Distribution (Pie/Donut chart) on the Duration tab.
 

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strava Activity Analyzer (Go)</title>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body { margin: 0; font-family: sans-serif; background-color: #f8f8f8; }
         .navbar {
@@ -224,6 +226,20 @@
             padding: 40px 20px;
             color: #666;
         }
+        
+        /* Chart containers */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .chart-wrapper {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
     </style>
     <script>
         function openTab(evt, tabName) {
@@ -277,8 +293,8 @@
                 // Update summary cards
                 updateSummaryCards(data);
                 
-                // Update activities list
-                updateActivitiesList(data.activities || []);
+                // Update activity counts chart
+                updateActivityCountsChart(data.activities || []);
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards (show full error in console, truncated in UI)
@@ -427,6 +443,105 @@
             return div.innerHTML;
         }
         
+        // Chart instance for activity counts
+        let activityCountsChartInstance = null;
+        
+        // Calculate activity counts by sport type
+        function calculateActivityCountsBySport(activities) {
+            const counts = {};
+            activities.forEach(activity => {
+                const sportType = activity.sport_type || 'Unknown';
+                counts[sportType] = (counts[sportType] || 0) + 1;
+            });
+            return counts;
+        }
+        
+        // Render Activity Counts Distribution chart
+        function updateActivityCountsChart(activities) {
+            const canvas = document.getElementById('activityCountsChart');
+            if (!canvas) return;
+            
+            // Calculate activity counts by sport type
+            const counts = calculateActivityCountsBySport(activities);
+            
+            // Prepare data for Chart.js
+            const labels = Object.keys(counts);
+            const data = Object.values(counts);
+            
+            // If no activities, show empty state
+            if (labels.length === 0) {
+                if (activityCountsChartInstance) {
+                    activityCountsChartInstance.destroy();
+                    activityCountsChartInstance = null;
+                }
+                const container = canvas.parentElement;
+                container.innerHTML = '<div class="empty-state">No activities to display</div>';
+                return;
+            }
+            
+            // Strava orange color palette
+            const colors = [
+                '#fc4c02', // Strava Orange
+                '#ff6b35', // Orange Red
+                '#ff8c42', // Dark Orange
+                '#ffa366', // Light Orange
+                '#ffb88c', // Pale Orange
+                '#ffccb3', // Very Pale Orange
+                '#ff6b9d', // Pink
+                '#c44569', // Dark Pink
+                '#f8b500', // Yellow
+                '#4ecdc4', // Teal
+                '#95e1d3', // Light Teal
+                '#a8e6cf', // Mint
+            ];
+            
+            // Destroy existing chart if it exists
+            if (activityCountsChartInstance) {
+                activityCountsChartInstance.destroy();
+            }
+            
+            // Create new chart
+            activityCountsChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         // Open default tab on load and fetch data if authenticated
         window.onload = function() {
             if (document.querySelector('.tablinks')) {
@@ -486,8 +601,13 @@
 
             <div id="Overview" class="tabcontent">
                 <h3>Overview</h3>
-                <div id="activities-list" class="activities-list">
-                    <div class="loading-state">Loading activities...</div>
+                
+                <!-- Activity Counts Distribution Chart -->
+                <div class="chart-wrapper">
+                    <h4>Activity Counts by Sport Type</h4>
+                    <div class="chart-container">
+                        <canvas id="activityCountsChart"></canvas>
+                    </div>
                 </div>
             </div>
 
