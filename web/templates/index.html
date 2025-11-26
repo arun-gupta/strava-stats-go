@@ -295,6 +295,9 @@
                 
                 // Update activity counts chart
                 updateActivityCountsChart(data.activities || []);
+                
+                // Update moving time chart
+                updateMovingTimeChart(data.activities || []);
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards (show full error in console, truncated in UI)
@@ -542,6 +545,117 @@
             });
         }
         
+        // Chart instance for moving time
+        let movingTimeChartInstance = null;
+        
+        // Calculate moving time by sport type
+        function calculateMovingTimeBySport(activities) {
+            const timeBySport = {};
+            activities.forEach(activity => {
+                const sportType = activity.sport_type || 'Unknown';
+                const movingTime = activity.moving_time || 0; // in seconds
+                timeBySport[sportType] = (timeBySport[sportType] || 0) + movingTime;
+            });
+            return timeBySport;
+        }
+        
+        // Render Moving Time Distribution chart
+        function updateMovingTimeChart(activities) {
+            const canvas = document.getElementById('movingTimeChart');
+            if (!canvas) return;
+            
+            // Calculate moving time by sport type
+            const timeBySport = calculateMovingTimeBySport(activities);
+            
+            // Prepare data for Chart.js
+            const labels = Object.keys(timeBySport);
+            const timeInHours = Object.values(timeBySport).map(seconds => seconds / 3600); // Convert to hours
+            
+            // If no activities, show empty state
+            if (labels.length === 0) {
+                if (movingTimeChartInstance) {
+                    movingTimeChartInstance.destroy();
+                    movingTimeChartInstance = null;
+                }
+                const container = canvas.parentElement;
+                container.innerHTML = '<div class="empty-state">No activities to display</div>';
+                return;
+            }
+            
+            // Strava orange color palette (same as activity counts chart)
+            const colors = [
+                '#fc4c02', // Strava Orange
+                '#ff6b35', // Orange Red
+                '#ff8c42', // Dark Orange
+                '#ffa366', // Light Orange
+                '#ffb88c', // Pale Orange
+                '#ffccb3', // Very Pale Orange
+                '#ff6b9d', // Pink
+                '#c44569', // Dark Pink
+                '#f8b500', // Yellow
+                '#4ecdc4', // Teal
+                '#95e1d3', // Light Teal
+                '#a8e6cf', // Mint
+            ];
+            
+            // Destroy existing chart if it exists
+            if (movingTimeChartInstance) {
+                movingTimeChartInstance.destroy();
+            }
+            
+            // Create new chart
+            movingTimeChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: timeInHours,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const hours = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((hours / total) * 100).toFixed(1);
+                                    
+                                    // Format hours nicely
+                                    const hoursInt = Math.floor(hours);
+                                    const minutes = Math.floor((hours - hoursInt) * 60);
+                                    let timeStr = '';
+                                    if (hoursInt > 0) {
+                                        timeStr = minutes > 0 ? `${hoursInt}h ${minutes}m` : `${hoursInt}h`;
+                                    } else {
+                                        timeStr = `${minutes}m`;
+                                    }
+                                    
+                                    return `${label}: ${timeStr} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
         // Open default tab on load and fetch data if authenticated
         window.onload = function() {
             if (document.querySelector('.tablinks')) {
@@ -613,7 +727,14 @@
 
             <div id="Duration" class="tabcontent">
                 <h3>Duration</h3>
-                <p>Coming Soon</p>
+                
+                <!-- Moving Time Distribution Chart -->
+                <div class="chart-wrapper">
+                    <h4>Moving Time by Sport Type</h4>
+                    <div class="chart-container">
+                        <canvas id="movingTimeChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div id="Heatmap" class="tabcontent">

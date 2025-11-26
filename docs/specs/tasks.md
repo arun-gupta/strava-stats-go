@@ -31,8 +31,8 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 4.1: Integrate JavaScript charting library (e.g., Chart.js).
 - [x] 4.2: Calculate activity counts by sport type.
 - [x] 4.3: Render Activity Counts Distribution (Pie/Donut chart) on the Overview tab.
-- [ ] 4.4: Calculate moving time by sport type.
-- [ ] 4.5: Render Moving Time Distribution (Pie/Donut chart) on the Duration tab.
+- [x] 4.4: Calculate moving time by sport type.
+- [x] 4.5: Render Moving Time Distribution (Pie/Donut chart) on the Duration tab.
 
 ## Phase 5: Advanced Analytics (Heatmaps & Trends)
 - [ ] 5.1: Implement pagination handling to retrieve full activity history.
@@ -43,7 +43,7 @@ Revised to prioritize iterative delivery of visible features.
 - [ ] 5.6: Implement algorithms to find PRs & generate distance histograms.
 
 ## Phase 6: Refinement & Interactivity
-- [ ] 6.1: Implement Date Range Picker (ensure filtering uses local activity dates).
+- [ ] 6.1: Implement Date Range Picker with preselect for Last 7 Days, 30 days, 90 days, YTD, Custom (show date picker for start and end date).
 - [ ] 6.2: Implement Unit Toggle (Metric/Imperial).
 - [ ] 6.3: Implement error handling (empty states hiding tabs, API failures).
 - [ ] 6.4: Optimize initial load time (concurrent fetching).
