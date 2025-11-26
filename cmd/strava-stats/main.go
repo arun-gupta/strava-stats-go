@@ -144,28 +144,40 @@ func main() {
 
 		// Calculate summary statistics
 		var totalMovingTime int
-		var earliestDate, latestDate *time.Time
+		var earliestDateStr, latestDateStr string
 		
 		for _, activity := range normalized {
 			totalMovingTime += activity.MovingTime
 			
-			// Track date range
-			if earliestDate == nil || activity.LocalDate.Before(*earliestDate) {
-				date := activity.LocalDate
-				earliestDate = &date
-			}
-			if latestDate == nil || activity.LocalDate.After(*latestDate) {
-				date := activity.LocalDate
-				latestDate = &date
+			// Track date range using LocalDateStr (YYYY-MM-DD) for consistency
+			// This ensures the date range matches exactly what's in the activities
+			if activity.LocalDateStr != "" {
+				if earliestDateStr == "" || activity.LocalDateStr < earliestDateStr {
+					earliestDateStr = activity.LocalDateStr
+				}
+				if latestDateStr == "" || activity.LocalDateStr > latestDateStr {
+					latestDateStr = activity.LocalDateStr
+				}
 			}
 		}
 
-		// Format date range
+		// Format date range for display
 		var dateRange string
-		if earliestDate != nil && latestDate != nil {
-			dateRange = fmt.Sprintf("%s - %s", 
-				earliestDate.Format("Jan 2"), 
-				latestDate.Format("Jan 2"))
+		var startDateStr, endDateStr string
+		if earliestDateStr != "" && latestDateStr != "" {
+			// Parse the date strings to format for display
+			earliestDate, err1 := time.Parse("2006-01-02", earliestDateStr)
+			latestDate, err2 := time.Parse("2006-01-02", latestDateStr)
+			if err1 == nil && err2 == nil {
+				dateRange = fmt.Sprintf("%s - %s", 
+					earliestDate.Format("Jan 2"), 
+					latestDate.Format("Jan 2"))
+			} else {
+				dateRange = fmt.Sprintf("%s - %s", earliestDateStr, latestDateStr)
+			}
+			// Send date strings in YYYY-MM-DD format for frontend use
+			startDateStr = earliestDateStr
+			endDateStr = latestDateStr
 		} else {
 			dateRange = "No activities"
 		}
@@ -176,6 +188,8 @@ func main() {
 		// Prepare response
 		response := map[string]interface{}{
 			"dateRange":      dateRange,
+			"startDate":      startDateStr,
+			"endDate":        endDateStr,
 			"totalActivities": len(normalized),
 			"totalMovingTime": movingTimeFormatted,
 			"activities":     normalized,

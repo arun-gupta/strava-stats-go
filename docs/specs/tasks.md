@@ -36,8 +36,8 @@ Revised to prioritize iterative delivery of visible features.
 
 ## Phase 5: Advanced Analytics (Heatmaps & Trends)
 - [x] 5.1: Implement pagination handling to retrieve full activity history.
-- [ ] 5.2: Implement grid generation for Activity Heatmap (frequency/intensity).
-- [ ] 5.3: Render Heatmaps (Calendar grid) with a toggle between all activities and running.
+- [x] 5.2: Implement grid generation for Activity Heatmap (frequency/intensity).
+- [x] 5.3: Render Heatmaps (Calendar grid) with a toggle between all activities and running.
 - [ ] 5.4: Implement algorithms to find PRs & generate distance histograms and display in Running Stats.
 - [ ] 5.5: Implement logic for calculating running averages (Pace/Distance).
 - [ ] 5.6: Render Trends (Line charts).

@@ -378,11 +378,26 @@
                 // Update summary cards
                 updateSummaryCards(data);
                 
+                // Store backend-provided date range for heatmap
+                backendStartDate = data.startDate || null;
+                backendEndDate = data.endDate || null;
+                
+                // Debug: Log the date range
+                console.log('Backend date range:', backendStartDate, 'to', backendEndDate);
+                console.log('Activities count:', (data.activities || []).length);
+                if (data.activities && data.activities.length > 0) {
+                    console.log('First activity date:', data.activities[0].local_date_str);
+                    console.log('Last activity date:', data.activities[data.activities.length - 1].local_date_str);
+                }
+                
                 // Update activity counts chart
                 updateActivityCountsChart(data.activities || []);
                 
                 // Update moving time chart
                 updateMovingTimeChart(data.activities || []);
+                
+                // Update heatmap
+                updateHeatmap(data.activities || []);
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards (show full error in console, truncated in UI)
@@ -744,49 +759,70 @@
         // Heatmap state
         let allActivitiesForHeatmap = [];
         let currentHeatmapFilter = 'all';
+        // Store backend-provided date range
+        let backendStartDate = null;
+        let backendEndDate = null;
         
-        // Generate heatmap grid data (frequency/intensity by date)
-        function generateHeatmapGrid(activities) {
+        // Generate heatmap grid data (intensity based on moving time by date)
+        // Only includes dates that fall within the backend-provided range
+        function generateHeatmapGrid(activities, startDateStr, endDateStr) {
             const grid = {};
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
             
-            // Initialize grid for the last year (53 weeks)
-            const oneYearAgo = new Date(today);
-            oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+            if (activities.length === 0) {
+                return { grid: {} };
+            }
             
-            // Count activities by date
+            // Sum moving time (in seconds) by date, but only for dates within the range
             activities.forEach(activity => {
                 const dateStr = activity.local_date_str || activity.start_date_local;
                 if (!dateStr) return;
                 
-                // Parse date
-                const [year, month, day] = dateStr.split('-').map(Number);
-                const activityDate = new Date(year, month - 1, day);
-                activityDate.setHours(0, 0, 0, 0);
+                // Extract just the date part (YYYY-MM-DD) in case it has time component
+                const dateKey = dateStr.split('T')[0].split(' ')[0];
                 
-                // Only include dates within the last year
-                if (activityDate < oneYearAgo || activityDate > today) return;
-                
-                // Use ISO date string as key (YYYY-MM-DD)
-                const key = activityDate.toISOString().split('T')[0];
-                
-                if (!grid[key]) {
-                    grid[key] = 0;
+                // Only include dates within the backend-provided range
+                if (startDateStr && dateKey < startDateStr) {
+                    return; // Skip dates before the range
                 }
-                grid[key]++;
+                if (endDateStr && dateKey > endDateStr) {
+                    return; // Skip dates after the range
+                }
+                
+                // Get moving time in seconds
+                const movingTime = activity.moving_time || 0;
+                
+                if (!grid[dateKey]) {
+                    grid[dateKey] = 0;
+                }
+                grid[dateKey] += movingTime;
             });
             
-            return grid;
+            return { grid };
         }
         
-        // Get intensity level based on activity count
-        function getIntensityLevel(count) {
-            if (count === 0) return 0;
-            if (count === 1) return 1;
-            if (count <= 3) return 2;
-            if (count <= 5) return 3;
-            return 4;
+        // Get intensity level based on moving time (in seconds)
+        function getIntensityLevel(movingTimeSeconds) {
+            if (movingTimeSeconds === 0) return 0;
+            
+            // Convert to hours for easier threshold calculation
+            const hours = movingTimeSeconds / 3600;
+            
+            // Intensity levels based on hours of activity
+            if (hours < 0.5) return 1;      // Less than 30 minutes
+            if (hours < 1.5) return 2;     // 30 minutes to 1.5 hours
+            if (hours < 3) return 3;       // 1.5 to 3 hours
+            return 4;                       // More than 3 hours
+        }
+        
+        // Helper function to add days to a date string (YYYY-MM-DD)
+        function addDaysToDateStr(dateStr, days) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            date.setDate(date.getDate() + days);
+            const newYear = date.getFullYear();
+            const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+            const newDay = String(date.getDate()).padStart(2, '0');
+            return `${newYear}-${newMonth}-${newDay}`;
         }
         
         // Render heatmap calendar grid
@@ -794,43 +830,68 @@
             const container = document.getElementById('heatmap-grid-container');
             if (!container) return;
             
-            // Generate grid data
-            const grid = generateHeatmapGrid(activities);
+            // Use backend-provided date range - this is the source of truth
+            let startDateStr = backendStartDate;
+            let endDateStr = backendEndDate;
             
-            // Create calendar grid (53 weeks x 7 days = 371 days, but we'll show last year)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const oneYearAgo = new Date(today);
-            oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+            // Debug: Log what we're using
+            console.log('renderHeatmap - Using date range:', startDateStr, 'to', endDateStr);
             
-            // Get start date (first day of the week containing oneYearAgo)
-            const startDate = new Date(oneYearAgo);
-            const dayOfWeek = startDate.getDay();
-            startDate.setDate(startDate.getDate() - dayOfWeek); // Start from Sunday
+            // If no backend date range, show empty state
+            if (!startDateStr || !endDateStr) {
+                container.innerHTML = '<div class="empty-state">No activities to display</div>';
+                return;
+            }
             
-            // Create grid HTML
+            // Generate grid data from activities, filtering to only include dates within the range
+            const { grid } = generateHeatmapGrid(activities, startDateStr, endDateStr);
+            
+            // Debug: Log grid keys
+            console.log('Grid dates:', Object.keys(grid).sort());
+            
+            // Create grid HTML - iterate using date strings to avoid timezone issues
+            // ONLY iterate through dates in the backend-provided range
             let gridHTML = '<div class="heatmap-grid">';
-            const currentDate = new Date(startDate);
-            const endDate = new Date(today);
-            endDate.setDate(endDate.getDate() + 1); // Include today
+            let currentDateStr = startDateStr;
             
-            while (currentDate < endDate) {
-                const dateKey = currentDate.toISOString().split('T')[0];
-                const count = grid[dateKey] || 0;
-                const intensity = getIntensityLevel(count);
+            // Debug: Log iteration start
+            console.log('Starting iteration from:', currentDateStr, 'to', endDateStr);
+            
+            while (currentDateStr <= endDateStr) {
+                // Only show grid data for dates within the range
+                const movingTimeSeconds = grid[currentDateStr] || 0;
+                const intensity = getIntensityLevel(movingTimeSeconds);
                 
                 let className = 'heatmap-day';
-                if (count > 0) {
+                if (movingTimeSeconds > 0) {
                     className += ' has-activity intensity-' + intensity;
                 }
                 
-                const tooltipText = count > 0 
-                    ? `${count} ${count === 1 ? 'activity' : 'activities'} on ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                    : 'No activities';
+                // Format date directly from date string to avoid timezone conversion issues
+                const [year, month, day] = currentDateStr.split('-').map(Number);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const formattedDate = `${monthNames[month - 1]} ${day}, ${year}`;
                 
-                gridHTML += `<div class="${className}" data-date="${dateKey}" data-count="${count}" title="${tooltipText}"></div>`;
+                // Format moving time for tooltip
+                let tooltipText = '';
+                if (movingTimeSeconds > 0) {
+                    const hours = Math.floor(movingTimeSeconds / 3600);
+                    const minutes = Math.floor((movingTimeSeconds % 3600) / 60);
+                    let timeStr = '';
+                    if (hours > 0) {
+                        timeStr = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+                    } else {
+                        timeStr = `${minutes}m`;
+                    }
+                    tooltipText = `${timeStr} on ${formattedDate}`;
+                } else {
+                    tooltipText = `No activities on ${formattedDate}`;
+                }
                 
-                currentDate.setDate(currentDate.getDate() + 1);
+                gridHTML += `<div class="${className}" data-date="${currentDateStr}" data-time="${movingTimeSeconds}" title="${tooltipText}"></div>`;
+                
+                // Move to next day using date string manipulation
+                currentDateStr = addDaysToDateStr(currentDateStr, 1);
             }
             
             gridHTML += '</div>';
@@ -839,13 +900,24 @@
             // Add tooltip functionality
             const tooltip = document.getElementById('heatmap-tooltip');
             const days = container.querySelectorAll('.heatmap-day');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             days.forEach(day => {
                 day.addEventListener('mouseenter', (e) => {
-                    const count = parseInt(e.target.getAttribute('data-count') || '0');
+                    const movingTimeSeconds = parseInt(e.target.getAttribute('data-time') || '0');
                     const date = e.target.getAttribute('data-date');
-                    if (date && count > 0) {
-                        const dateObj = new Date(date);
-                        tooltip.textContent = `${count} ${count === 1 ? 'activity' : 'activities'} on ${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                    if (date && movingTimeSeconds > 0) {
+                        // Format date directly from date string (YYYY-MM-DD) to avoid timezone conversion
+                        const [year, month, dayNum] = date.split('-').map(Number);
+                        const formattedDate = `${monthNames[month - 1]} ${dayNum}, ${year}`;
+                        const hours = Math.floor(movingTimeSeconds / 3600);
+                        const minutes = Math.floor((movingTimeSeconds % 3600) / 60);
+                        let timeStr = '';
+                        if (hours > 0) {
+                            timeStr = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+                        } else {
+                            timeStr = `${minutes}m`;
+                        }
+                        tooltip.textContent = `${timeStr} on ${formattedDate}`;
                         tooltip.style.display = 'block';
                         tooltip.style.left = e.pageX + 10 + 'px';
                         tooltip.style.top = e.pageY - 30 + 'px';
