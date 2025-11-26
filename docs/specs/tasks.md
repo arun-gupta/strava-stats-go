@@ -35,12 +35,12 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 4.5: Render Moving Time Distribution (Pie/Donut chart) on the Duration tab.
 
 ## Phase 5: Advanced Analytics (Heatmaps & Trends)
-- [ ] 5.1: Implement pagination handling to retrieve full activity history.
+- [x] 5.1: Implement pagination handling to retrieve full activity history.
 - [ ] 5.2: Implement grid generation for Activity Heatmap (frequency/intensity).
-- [ ] 5.3: Render Heatmaps (Calendar grid).
-- [ ] 5.4: Implement logic for calculating running averages (Pace/Distance).
-- [ ] 5.5: Render Trends (Line charts).
-- [ ] 5.6: Implement algorithms to find PRs & generate distance histograms.
+- [ ] 5.3: Render Heatmaps (Calendar grid) with a toggle between all activities and running.
+- [ ] 5.4: Implement algorithms to find PRs & generate distance histograms and display in Running Stats.
+- [ ] 5.5: Implement logic for calculating running averages (Pace/Distance).
+- [ ] 5.6: Render Trends (Line charts).
 
 ## Phase 6: Refinement & Interactivity
 - [ ] 6.1: Implement Date Range Picker with preselect for Last 7 Days, 30 days, 90 days, YTD, Custom (show date picker for start and end date).

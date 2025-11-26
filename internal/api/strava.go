@@ -187,3 +187,47 @@ func (c *Client) FetchActivities(ctx context.Context, token *oauth2.Token, opts 
 	return activities, nil
 }
 
+// FetchAllActivities retrieves all activities from Strava API by paginating through all pages.
+// This function automatically handles pagination to fetch the complete activity history.
+func (c *Client) FetchAllActivities(ctx context.Context, token *oauth2.Token, opts *FetchActivitiesOptions) ([]Activity, error) {
+	var allActivities []Activity
+	page := 1
+	perPage := 200 // Use max per_page to minimize number of requests
+	
+	// If opts is provided, use its parameters but override page and per_page for pagination
+	paginationOpts := &FetchActivitiesOptions{
+		Before:  opts.Before,
+		After:   opts.After,
+		PerPage: &perPage,
+	}
+	
+	for {
+		// Set current page
+		paginationOpts.Page = &page
+		
+		// Fetch current page
+		activities, err := c.FetchActivities(ctx, token, paginationOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch activities page %d: %w", page, err)
+		}
+		
+		// If no activities returned, we've reached the end
+		if len(activities) == 0 {
+			break
+		}
+		
+		// Append activities from this page
+		allActivities = append(allActivities, activities...)
+		
+		// If we got fewer activities than per_page, we've reached the last page
+		if len(activities) < perPage {
+			break
+		}
+		
+		// Move to next page
+		page++
+	}
+	
+	return allActivities, nil
+}
+
