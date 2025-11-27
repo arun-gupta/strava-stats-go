@@ -75,82 +75,59 @@ To start the application and automatically open it in your browser (at http://lo
 
 ## Features
 
-### ✅ Implemented
+### Authentication & Security
+*   Secure OAuth2 authentication with Strava
+*   CSRF protection and secure session management
+*   Automatic token refresh to maintain active sessions
+*   Server-side token storage (never exposed to client)
 
-#### Phase 1-2: Foundation & Authentication
-*   **Project Foundation**: Basic HTTP server, standard directory structure (`cmd/`, `internal/`, `web/`), and configuration management (`.env`).
-*   **Secure Authentication**:
-    *   Full OAuth2 flow with Strava (Redirect & Callback).
-    *   CSRF protection with cryptographically random state parameters.
-    *   Secure session management using cookies with required `SESSION_SECRET`.
-    *   Automatic token refresh logic to maintain active sessions.
-*   **User Interface**:
-    *   Welcome page with "Connect with Strava" button.
-    *   Authenticated state display ("Logged in as [Name]").
-    *   Strava-themed header with branding and logout functionality.
+### Data Management
+*   Activity fetching with full pagination support
+*   Robust error handling (rate limits, unauthorized, server errors)
+*   Timezone-independent date alignment
+*   In-memory caching to reduce API calls
+*   Concurrent data fetching for optimized performance
 
-#### Phase 3: Connectivity & Activity List
-*   **Strava API Integration**:
-    *   Activity fetching with pagination support.
-    *   Robust error handling (rate limits, unauthorized, server errors).
-    *   Automatic token refresh and retry logic.
-*   **Data Normalization**:
-    *   Timezone-independent date alignment using `start_date_local`.
-    *   Unit standardization (meters to km/miles, seconds to formatted duration).
-    *   Default 7-day activity window.
-*   **Dashboard Summary**:
-    *   Date range display (start to end date).
-    *   Total activities count.
-    *   Total moving time.
+### Interactive Dashboard
+*   **Summary Cards**: Date range, total activities, and moving time
+*   **Activity List**: Detailed view of all activities with sport type, distance, and duration
+*   **Date Range Picker**: Preset options (7d, 30d, 90d, 6m, YTD) and custom date selection
+*   **Unit Toggle**: Switch between Metric and Imperial units (defaults to Imperial)
+*   **URL Persistence**: Date range and preferences saved in URL for easy sharing
 
-#### Phase 4: Core Visualizations
-*   **Overview Tab**:
-    *   Activity counts distribution (pie/doughnut chart) by sport type.
-*   **Duration Tab**:
-    *   Moving time distribution (pie/doughnut chart) by sport type.
+### Visualizations
 
-#### Phase 5: Advanced Analytics
-*   **Heatmap Tab**:
-    *   Calendar-based activity heatmap showing training consistency.
-    *   Intensity levels based on moving time.
-    *   Toggle between "All Activities" and "Running Only" views.
-    *   "Show Gap Details" button to view days with no activities.
-    *   Interactive tooltips showing activity details for each day.
-*   **Running Stats Tab**:
-    *   Running summary statistics (Total Runs, 10K+ Runs, Total Distance, Average Pace).
-    *   Personal Records (Fastest 10K, Longest Run).
-    *   Distance distribution histogram with customizable bins.
-*   **Trends Tab**:
-    *   Distance trend line chart over time.
-    *   Pace trend line chart over time.
-    *   Period toggle (Daily, Weekly, Monthly).
-    *   Shows all activities with moving averages for smoothing.
+#### Overview Tab
+*   Activity counts distribution (pie/doughnut chart) by sport type
 
-#### Phase 6: Refinement & Interactivity
-*   **Date Range Picker**:
-    *   Preset options: Last 7 Days, 30 Days, 90 Days, 6 Months, Year to Date.
-    *   Custom date range selection with start and end date pickers.
-    *   Date range persists in URL for easy sharing and bookmarking.
-    *   Summary card shows date range with total number of days.
-*   **Unit Toggle**:
-    *   Switch between Metric (km, km/h, min/km) and Imperial (miles, mph, min/mi) units.
-    *   Preference saved in localStorage.
-    *   Defaults to Imperial units.
-    *   All charts, stats, and displays update dynamically.
-*   **User Experience Enhancements**:
-    *   Loading spinners for all data fetching operations.
-    *   Comprehensive error handling with user-friendly messages.
-    *   Empty states when no data is available.
-    *   Dynamic tab visibility (tabs hide when no relevant data).
-*   **Performance**:
-    *   Concurrent data fetching for faster initial load.
-    *   In-memory caching to reduce redundant API calls.
-    *   Optimized pagination handling.
-*   **Responsive Design**:
-    *   Mobile-first responsive layout.
-    *   Optimized for mobile, tablet, and desktop screens.
-    *   Touch-friendly interface elements.
-    *   Horizontal scrolling for heatmap on mobile devices.
+#### Duration Tab
+*   Moving time distribution (pie/doughnut chart) by sport type
+
+#### Heatmap Tab
+*   Calendar-based activity heatmap showing training consistency
+*   Intensity levels based on moving time
+*   Toggle between "All Activities" and "Running Only" views
+*   "Show Gap Details" to view days with no activities
+*   Interactive tooltips with activity details
+
+#### Running Stats Tab
+*   Summary statistics: Total Runs, 10K+ Runs, Total Distance, Average Pace
+*   Personal Records: Fastest 10K, Longest Run
+*   Distance distribution histogram
+
+#### Trends Tab
+*   Distance trend line chart over time
+*   Pace trend line chart over time
+*   Period toggle: Daily, Weekly, Monthly
+*   Moving averages for data smoothing
+
+### User Experience
+*   Loading spinners for all data operations
+*   Comprehensive error handling with user-friendly messages
+*   Empty states when no data is available
+*   Dynamic tab visibility (tabs hide when no relevant data)
+*   Responsive design optimized for mobile, tablet, and desktop
+*   Touch-friendly interface elements
 
 ## Project Structure
 *   `cmd/`: Application entry points.
