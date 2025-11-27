@@ -2229,26 +2229,31 @@
         
         // Update distance histogram chart
         function updateDistanceHistogram(histogram) {
+            // Get container first
+            const container = document.querySelector('#distanceHistogramChart')?.parentElement || 
+                             document.querySelector('.chart-container');
+            if (!container) {
+                console.warn('Distance histogram container not found');
+                return;
+            }
+            
+            // Clear loading spinner if present
+            if (container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="distanceHistogramChart"></canvas>';
+            }
+            
+            // Get canvas after clearing spinner
             const ctx = document.getElementById('distanceHistogramChart');
             if (!ctx) {
                 console.warn('Distance histogram canvas not found');
                 return;
             }
             
-            // Clear loading spinner if present
-            const container = ctx.parentElement;
-            if (container && container.querySelector('.loading-container')) {
-                container.innerHTML = '<canvas id="distanceHistogramChart"></canvas>';
-            }
-            
             const bins = histogram.bins || [];
             console.log('Updating histogram with', bins.length, 'bins');
             
             if (bins.length === 0) {
-                const container = ctx.parentElement;
-                if (container) {
-                    container.innerHTML = '<div class="empty-state">No running data available</div>';
-                }
+                container.innerHTML = '<div class="empty-state">No running data available</div>';
                 return;
             }
             
@@ -2408,23 +2413,28 @@
         
         // Update distance trend chart
         function updateDistanceTrendChart(points) {
+            // Get container first
+            const container = document.querySelector('#distanceTrendChart')?.parentElement || 
+                             document.querySelectorAll('.chart-container')[2]; // Third chart container
+            if (!container) {
+                console.warn('Distance trend chart container not found');
+                return;
+            }
+            
+            // Clear loading spinner if present
+            if (container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="distanceTrendChart"></canvas>';
+            }
+            
+            // Get canvas after clearing spinner
             const ctx = document.getElementById('distanceTrendChart');
             if (!ctx) {
                 console.warn('Distance trend chart canvas not found');
                 return;
             }
             
-            // Clear loading spinner if present
-            const container = ctx.parentElement;
-            if (container && container.querySelector('.loading-container')) {
-                container.innerHTML = '<canvas id="distanceTrendChart"></canvas>';
-            }
-            
             if (points.length === 0) {
-                const container = ctx.parentElement;
-                if (container) {
-                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
-                }
+                container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
                 return;
             }
             
@@ -2497,7 +2507,6 @@
                 });
             } catch (error) {
                 console.error('Error creating distance trend chart:', error);
-                const container = ctx.parentElement;
                 if (container) {
                     container.innerHTML = '<div class="error">Error rendering distance chart</div>';
                 }
@@ -2506,23 +2515,28 @@
         
         // Update pace trend chart
         function updatePaceTrendChart(points) {
+            // Get container first
+            const container = document.querySelector('#paceTrendChart')?.parentElement || 
+                             document.querySelectorAll('.chart-container')[3]; // Fourth chart container
+            if (!container) {
+                console.warn('Pace trend chart container not found');
+                return;
+            }
+            
+            // Clear loading spinner if present
+            if (container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="paceTrendChart"></canvas>';
+            }
+            
+            // Get canvas after clearing spinner
             const ctx = document.getElementById('paceTrendChart');
             if (!ctx) {
                 console.warn('Pace trend chart canvas not found');
                 return;
             }
             
-            // Clear loading spinner if present
-            const container = ctx.parentElement;
-            if (container && container.querySelector('.loading-container')) {
-                container.innerHTML = '<canvas id="paceTrendChart"></canvas>';
-            }
-            
             if (points.length === 0) {
-                const container = ctx.parentElement;
-                if (container) {
-                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
-                }
+                container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No data available</div>';
                 return;
             }
             
@@ -2556,7 +2570,6 @@
             
             // If no valid paces, show empty state
             if (paces.length === 0) {
-                const container = ctx.parentElement;
                 if (container) {
                     container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px; font-style: italic;">No pace data available</div>';
                 }
@@ -2623,7 +2636,6 @@
                 });
             } catch (error) {
                 console.error('Error creating pace trend chart:', error);
-                const container = ctx.parentElement;
                 if (container) {
                     container.innerHTML = '<div class="error">Error rendering pace chart</div>';
                 }
