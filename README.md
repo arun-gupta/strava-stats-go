@@ -59,6 +59,19 @@ To start the application and automatically open it in your browser (at http://lo
 ./quickstart.sh
 ```
 
+## Screenshots
+
+Screenshots of the application can be found in the [`docs/images/`](docs/images/) directory.
+
+*   Dashboard Overview
+*   Activity Heatmap
+*   Running Statistics
+*   Trends Analysis
+*   Date Range Picker
+*   Unit Toggle Interface
+
+_Note: Screenshots will be added to showcase the application's features and user interface._
+
 ## Features
 
 ### ✅ Implemented
@@ -100,22 +113,43 @@ To start the application and automatically open it in your browser (at http://lo
     *   Calendar-based activity heatmap showing training consistency.
     *   Intensity levels based on moving time.
     *   Toggle between "All Activities" and "Running Only" views.
+    *   "Show Gap Details" button to view days with no activities.
+    *   Interactive tooltips showing activity details for each day.
 *   **Running Stats Tab**:
     *   Running summary statistics (Total Runs, 10K+ Runs, Total Distance, Average Pace).
     *   Personal Records (Fastest 10K, Longest Run).
-    *   Distance distribution histogram (1-mile bins).
+    *   Distance distribution histogram with customizable bins.
 *   **Trends Tab**:
     *   Distance trend line chart over time.
     *   Pace trend line chart over time.
     *   Period toggle (Daily, Weekly, Monthly).
-    *   Shows all activities (no filter toggle).
+    *   Shows all activities with moving averages for smoothing.
 
-### 🚀 Planned (Phase 6)
-*   **Date Range Picker**: Preset options (Last 7 Days, 30 days, 90 days, YTD) and custom date selection.
-*   **Unit Toggle**: Switch between Metric and Imperial units.
-*   **Enhanced Error Handling**: Empty states, improved API failure messages.
-*   **Performance Optimization**: Concurrent data fetching, optimized initial load.
-*   **Responsive Design**: Mobile-friendly dashboard layout.
+#### Phase 6: Refinement & Interactivity
+*   **Date Range Picker**:
+    *   Preset options: Last 7 Days, 30 Days, 90 Days, 6 Months, Year to Date.
+    *   Custom date range selection with start and end date pickers.
+    *   Date range persists in URL for easy sharing and bookmarking.
+    *   Summary card shows date range with total number of days.
+*   **Unit Toggle**:
+    *   Switch between Metric (km, km/h, min/km) and Imperial (miles, mph, min/mi) units.
+    *   Preference saved in localStorage.
+    *   Defaults to Imperial units.
+    *   All charts, stats, and displays update dynamically.
+*   **User Experience Enhancements**:
+    *   Loading spinners for all data fetching operations.
+    *   Comprehensive error handling with user-friendly messages.
+    *   Empty states when no data is available.
+    *   Dynamic tab visibility (tabs hide when no relevant data).
+*   **Performance**:
+    *   Concurrent data fetching for faster initial load.
+    *   In-memory caching to reduce redundant API calls.
+    *   Optimized pagination handling.
+*   **Responsive Design**:
+    *   Mobile-first responsive layout.
+    *   Optimized for mobile, tablet, and desktop screens.
+    *   Touch-friendly interface elements.
+    *   Horizontal scrolling for heatmap on mobile devices.
 
 ## Project Structure
 *   `cmd/`: Application entry points.
