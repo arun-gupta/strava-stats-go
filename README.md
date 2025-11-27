@@ -61,30 +61,53 @@ To start the application and automatically open it in your browser (at http://lo
 
 ## Screenshots
 
-<div align="center">
-
 ### Overview Tab
 **Activity distribution and summary**
-[<img src="docs/images/overview.png" alt="Overview Tab" width="300" />](docs/images/overview.png)
+
+<p align="center">
+  <a href="docs/images/overview.png">
+    <img src="docs/images/overview.png" alt="Overview Tab" width="600" />
+  </a>
+</p>
 
 ### Duration Tab
 **Moving time distribution by sport type**
-[<img src="docs/images/duration.png" alt="Duration Tab" width="300" />](docs/images/duration.png)
+
+<p align="center">
+  <a href="docs/images/duration.png">
+    <img src="docs/images/duration.png" alt="Duration Tab" width="600" />
+  </a>
+</p>
 
 ### Heatmap Tab
 **All Activities View** | **Running Only View**
-[<img src="docs/images/heatmap-all.png" alt="Heatmap - All Activities" width="300" />](docs/images/heatmap-all.png)
-[<img src="docs/images/heatmap-running.png" alt="Heatmap - Running Only" width="300" />](docs/images/heatmap-running.png)
+
+<p align="center">
+  <a href="docs/images/heatmap-all.png">
+    <img src="docs/images/heatmap-all.png" alt="Heatmap - All Activities" width="400" />
+  </a>
+  <a href="docs/images/heatmap-running.png">
+    <img src="docs/images/heatmap-running.png" alt="Heatmap - Running Only" width="400" />
+  </a>
+</p>
 
 ### Running Stats Tab
 **Running statistics and distance distribution**
-[<img src="docs/images/running-stats.png" alt="Running Statistics" width="300" />](docs/images/running-stats.png)
+
+<p align="center">
+  <a href="docs/images/running-stats.png">
+    <img src="docs/images/running-stats.png" alt="Running Statistics" width="600" />
+  </a>
+</p>
 
 ### Trends Tab
 **Distance and pace trends over time**
-[<img src="docs/images/trends.png" alt="Trends Analysis" width="300" />](docs/images/trends.png)
 
-</div>
+<p align="center">
+  <a href="docs/images/trends.png">
+    <img src="docs/images/trends.png" alt="Trends Analysis" width="600" />
+  </a>
+</p>
 
 ## Features
 
