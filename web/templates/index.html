@@ -320,6 +320,64 @@
             color: white;
             padding: 8px 12px;
             border-radius: 4px;
+            display: none;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .gap-details-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            border: 2px solid #fc4c02;
+            background: white;
+            color: #fc4c02;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .gap-details-btn:hover {
+            background: #fc4c02;
+            color: white;
+        }
+        .gap-details {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            display: none;
+        }
+        .gap-details.show {
+            display: block;
+        }
+        .gap-details h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1rem;
+        }
+        .gap-details p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .gap-details .no-gaps {
+            color: #4caf50;
+            font-style: italic;
+        }
+        .gap-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .gap-date {
+            padding: 4px 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #666;
         }
         
         /* Running Stats Styles */
@@ -442,6 +500,125 @@
         .trends-period button.active:hover {
             background: #e34402;
         }
+        
+        /* Date Range Picker Styles */
+        .date-range-picker {
+            margin-bottom: 30px;
+            padding: 24px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            border: 1px solid #e1e8ed;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .date-range-presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        .date-range-btn {
+            padding: 10px 20px;
+            border: 2px solid #e1e8ed;
+            background: white;
+            color: #333;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .date-range-btn:hover {
+            background: #f8f9fa;
+            border-color: #fc4c02;
+            color: #fc4c02;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(252, 76, 2, 0.15);
+        }
+        .date-range-btn.active {
+            background: linear-gradient(135deg, #fc4c02 0%, #e34402 100%);
+            color: white;
+            border-color: #fc4c02;
+            box-shadow: 0 2px 8px rgba(252, 76, 2, 0.3);
+            transform: translateY(-1px);
+        }
+        .date-range-btn.active:hover {
+            background: linear-gradient(135deg, #e34402 0%, #d13a02 100%);
+            box-shadow: 0 3px 12px rgba(252, 76, 2, 0.4);
+        }
+        .custom-date-range {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            padding-top: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .custom-date-range label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .custom-date-range input[type="date"] {
+            padding: 10px 14px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+            background: white;
+            transition: all 0.2s ease;
+            min-width: 160px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .custom-date-range input[type="date"]:focus {
+            outline: none;
+            border-color: #fc4c02;
+            box-shadow: 0 0 0 3px rgba(252, 76, 2, 0.1);
+        }
+        .custom-date-range input[type="date"]:hover {
+            border-color: #fc4c02;
+        }
+        .custom-date-range button {
+            padding: 10px 24px;
+            border: none;
+            background: linear-gradient(135deg, #fc4c02 0%, #e34402 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(252, 76, 2, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .custom-date-range button:hover {
+            background: linear-gradient(135deg, #e34402 0%, #d13a02 100%);
+            box-shadow: 0 4px 12px rgba(252, 76, 2, 0.4);
+            transform: translateY(-1px);
+        }
+        .custom-date-range button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(252, 76, 2, 0.3);
+        }
     </style>
     <script>
         function openTab(evt, tabName) {
@@ -458,10 +635,168 @@
             evt.currentTarget.className += " active";
         }
         
+        // Date range state
+        let currentDateRange = '7d'; // '7d', '30d', '90d', 'ytd', 'custom'
+        let customStartDate = null;
+        let customEndDate = null;
+        
+        // Get date range parameters for API calls
+        function getDateRangeParams() {
+            let startDate, endDate;
+            
+            if (currentDateRange === 'custom' && customStartDate && customEndDate) {
+                startDate = customStartDate;
+                endDate = customEndDate;
+            } else {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                switch (currentDateRange) {
+                    case '7d':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - 6); // Include today, so 7 days total
+                        break;
+                    case '30d':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - 29); // Include today, so 30 days total
+                        break;
+                    case '90d':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - 89); // Include today, so 90 days total
+                        break;
+                    case 'ytd':
+                        startDate = new Date(today.getFullYear(), 0, 1); // January 1st
+                        break;
+                    default:
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - 6);
+                }
+                
+                endDate = today;
+                
+                // Format as YYYY-MM-DD
+                const formatDate = (d) => {
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                
+                startDate = formatDate(startDate);
+                endDate = formatDate(endDate);
+            }
+            
+            const params = `?start_date=${startDate}&end_date=${endDate}`;
+            console.log('Date range params:', params, 'for range:', currentDateRange);
+            return params;
+        }
+        
+        // Set date range
+        function setDateRange(range) {
+            currentDateRange = range;
+            
+            // Update button states
+            document.querySelectorAll('.date-range-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const btn = document.getElementById(`date-range-${range}`);
+            if (btn) {
+                btn.classList.add('active');
+            }
+            
+            // Show/hide custom date inputs
+            const customRangeDiv = document.getElementById('custom-date-range');
+            if (range === 'custom') {
+                customRangeDiv.style.display = 'flex';
+            } else {
+                customRangeDiv.style.display = 'none';
+                // Refresh data with new range
+                console.log('Setting date range to:', range);
+                refreshAllData();
+            }
+        }
+        
+        // Apply custom date range
+        function applyCustomDateRange() {
+            const startInput = document.getElementById('custom-start-date');
+            const endInput = document.getElementById('custom-end-date');
+            
+            if (!startInput.value || !endInput.value) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            customStartDate = startInput.value;
+            customEndDate = endInput.value;
+            
+            // Validate: start date should be before end date
+            if (new Date(customStartDate) > new Date(customEndDate)) {
+                alert('Start date must be before end date');
+                return;
+            }
+            
+            refreshAllData();
+        }
+        
+        // Update URL with current date range
+        function updateURLWithDateRange() {
+            const url = new URL(window.location);
+            url.searchParams.set('range', currentDateRange);
+            if (currentDateRange === 'custom' && customStartDate && customEndDate) {
+                url.searchParams.set('start_date', customStartDate);
+                url.searchParams.set('end_date', customEndDate);
+            } else {
+                url.searchParams.delete('start_date');
+                url.searchParams.delete('end_date');
+            }
+            window.history.pushState({}, '', url);
+        }
+        
+        // Load date range from URL parameters on page load
+        function loadDateRangeFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const range = urlParams.get('range');
+            const start = urlParams.get('start_date');
+            const end = urlParams.get('end_date');
+            
+            if (range && ['7d', '30d', '90d', 'ytd', 'custom'].includes(range)) {
+                currentDateRange = range;
+                if (range === 'custom' && start && end) {
+                    customStartDate = start;
+                    customEndDate = end;
+                    const customRangeDiv = document.getElementById('custom-date-range');
+                    if (customRangeDiv) {
+                        document.getElementById('custom-start-date').value = start;
+                        document.getElementById('custom-end-date').value = end;
+                        customRangeDiv.style.display = 'flex';
+                    }
+                }
+                // Update UI
+                document.querySelectorAll('.date-range-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const btn = document.getElementById(`date-range-${range}`);
+                if (btn) {
+                    btn.classList.add('active');
+                }
+            }
+        }
+        
+        // Refresh all dashboard data
+        function refreshAllData() {
+            updateURLWithDateRange();
+            fetchActivities();
+            fetchRunningStats();
+            fetchTrends();
+        }
+        
         // Fetch activities data from API
         async function fetchActivities() {
             try {
-                const response = await fetch('/api/activities');
+                const dateParams = getDateRangeParams();
+                const url = `/api/activities${dateParams}`;
+                console.log('Fetching activities from:', url);
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -502,6 +837,9 @@
                 // Debug: Log the date range
                 console.log('Backend date range:', backendStartDate, 'to', backendEndDate);
                 console.log('Activities count:', (data.activities || []).length);
+                console.log('Requested date range:', currentDateRange);
+                const sentDateParams = getDateRangeParams();
+                console.log('Date params sent:', sentDateParams);
                 if (data.activities && data.activities.length > 0) {
                     console.log('First activity date:', data.activities[0].local_date_str);
                     console.log('Last activity date:', data.activities[data.activities.length - 1].local_date_str);
@@ -546,7 +884,21 @@
             // Update Date Range card
             const dateRangeCard = document.querySelector('.card:nth-child(1) .value');
             if (dateRangeCard) {
-                dateRangeCard.textContent = data.dateRange || 'No activities';
+                let dateRangeText = data.dateRange || 'No activities';
+                
+                // Calculate and add number of days if we have start and end dates
+                if (data.startDate && data.endDate) {
+                    const startDate = new Date(data.startDate + 'T00:00:00');
+                    const endDate = new Date(data.endDate + 'T00:00:00');
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+                    
+                    if (dateRangeText !== 'No activities') {
+                        dateRangeText += ` (${diffDays} day${diffDays === 1 ? '' : 's'})`;
+                    }
+                }
+                
+                dateRangeCard.textContent = dateRangeText;
             }
             
             // Update Total Activities card
@@ -885,6 +1237,7 @@
         // Store backend-provided date range
         let backendStartDate = null;
         let backendEndDate = null;
+        let gapDetailsVisible = false;
         
         // Generate heatmap grid data (intensity based on moving time by date)
         // Only includes dates that fall within the backend-provided range
@@ -898,7 +1251,9 @@
             // Sum moving time (in seconds) by date, but only for dates within the range
             activities.forEach(activity => {
                 const dateStr = activity.local_date_str || activity.start_date_local;
-                if (!dateStr) return;
+                if (!dateStr) {
+                    return;
+                }
                 
                 // Extract just the date part (YYYY-MM-DD) in case it has time component
                 const dateKey = dateStr.split('T')[0].split(' ')[0];
@@ -919,6 +1274,14 @@
                 }
                 grid[dateKey] += movingTime;
             });
+            
+            // Debug: Log all dates in grid
+            console.log('generateHeatmapGrid - Grid dates:', Object.keys(grid).sort());
+            if (grid['2024-10-28'] !== undefined || grid['2025-10-28'] !== undefined) {
+                console.log('Oct 28 in grid:', grid['2024-10-28'] || grid['2025-10-28']);
+            } else {
+                console.log('Oct 28 NOT in grid');
+            }
             
             return { grid };
         }
@@ -969,16 +1332,10 @@
             // Generate grid data from activities, filtering to only include dates within the range
             const { grid } = generateHeatmapGrid(activities, startDateStr, endDateStr);
             
-            // Debug: Log grid keys
-            console.log('Grid dates:', Object.keys(grid).sort());
-            
             // Create grid HTML - iterate using date strings to avoid timezone issues
             // ONLY iterate through dates in the backend-provided range
             let gridHTML = '<div class="heatmap-grid">';
             let currentDateStr = startDateStr;
-            
-            // Debug: Log iteration start
-            console.log('Starting iteration from:', currentDateStr, 'to', endDateStr);
             
             while (currentDateStr <= endDateStr) {
                 // Only show grid data for dates within the range
@@ -1020,6 +1377,9 @@
             gridHTML += '</div>';
             container.innerHTML = gridHTML;
             
+            // Calculate and store gaps for gap details
+            calculateGaps(startDateStr, endDateStr, grid);
+            
             // Add tooltip functionality
             const tooltip = document.getElementById('heatmap-tooltip');
             const days = container.querySelectorAll('.heatmap-day');
@@ -1028,19 +1388,24 @@
                 day.addEventListener('mouseenter', (e) => {
                     const movingTimeSeconds = parseInt(e.target.getAttribute('data-time') || '0');
                     const date = e.target.getAttribute('data-date');
-                    if (date && movingTimeSeconds > 0) {
+                    if (date) {
                         // Format date directly from date string (YYYY-MM-DD) to avoid timezone conversion
                         const [year, month, dayNum] = date.split('-').map(Number);
                         const formattedDate = `${monthNames[month - 1]} ${dayNum}, ${year}`;
-                        const hours = Math.floor(movingTimeSeconds / 3600);
-                        const minutes = Math.floor((movingTimeSeconds % 3600) / 60);
-                        let timeStr = '';
-                        if (hours > 0) {
-                            timeStr = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+                        
+                        if (movingTimeSeconds > 0) {
+                            const hours = Math.floor(movingTimeSeconds / 3600);
+                            const minutes = Math.floor((movingTimeSeconds % 3600) / 60);
+                            let timeStr = '';
+                            if (hours > 0) {
+                                timeStr = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+                            } else {
+                                timeStr = `${minutes}m`;
+                            }
+                            tooltip.textContent = `${timeStr} on ${formattedDate}`;
                         } else {
-                            timeStr = `${minutes}m`;
+                            tooltip.textContent = `No activities on ${formattedDate}`;
                         }
-                        tooltip.textContent = `${timeStr} on ${formattedDate}`;
                         tooltip.style.display = 'block';
                         tooltip.style.left = e.pageX + 10 + 'px';
                         tooltip.style.top = e.pageY - 30 + 'px';
@@ -1064,6 +1429,96 @@
             applyHeatmapFilter();
         }
         
+        // Calculate gaps (days with no activities)
+        function calculateGaps(startDateStr, endDateStr, grid) {
+            const gaps = [];
+            let currentDateStr = startDateStr;
+            
+            while (currentDateStr <= endDateStr) {
+                const movingTime = grid[currentDateStr];
+                // A gap is a day with no activities (no entry in grid or movingTime is 0)
+                if (movingTime === undefined || movingTime === 0) {
+                    gaps.push(currentDateStr);
+                }
+                currentDateStr = addDaysToDateStr(currentDateStr, 1);
+            }
+            
+            // Store gaps globally for display
+            window.heatmapGaps = gaps;
+            
+            // Update gap details button visibility
+            const gapBtn = document.getElementById('gap-details-btn');
+            if (gapBtn) {
+                if (gaps.length === 0) {
+                    gapBtn.style.display = 'none';
+                } else {
+                    gapBtn.style.display = 'inline-block';
+                }
+            }
+            
+            // Update gap details display if visible
+            if (gapDetailsVisible) {
+                updateGapDetailsDisplay(gaps);
+            }
+        }
+        
+        // Update gap details display
+        function updateGapDetailsDisplay(gaps) {
+            const gapDetailsDiv = document.getElementById('gap-details');
+            if (!gapDetailsDiv) return;
+            
+            // Determine activity type text based on current filter
+            const activityText = currentHeatmapFilter === 'running' ? 'running activity' : 'activities';
+            
+            if (gaps.length === 0) {
+                const noGapsText = currentHeatmapFilter === 'running' 
+                    ? 'No gaps found! You have running activities for all days in the selected range.'
+                    : 'No gaps found! You have activities for all days in the selected range.';
+                gapDetailsDiv.innerHTML = `<h4>Gap Details</h4><p class="no-gaps">${noGapsText}</p>`;
+            } else {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const formattedDates = gaps.map(dateStr => {
+                    const [year, month, day] = dateStr.split('-').map(Number);
+                    return {
+                        dateStr: dateStr,
+                        formatted: `${monthNames[month - 1]} ${day}, ${year}`
+                    };
+                });
+                
+                let html = `<h4>Gap Details</h4>`;
+                html += `<p>Found <strong>${gaps.length}</strong> day${gaps.length === 1 ? '' : 's'} with no ${activityText}:</p>`;
+                html += `<div class="gap-dates">`;
+                formattedDates.forEach(item => {
+                    html += `<span class="gap-date">${item.formatted}</span>`;
+                });
+                html += `</div>`;
+                
+                gapDetailsDiv.innerHTML = html;
+            }
+        }
+        
+        // Toggle gap details visibility
+        function toggleGapDetails() {
+            gapDetailsVisible = !gapDetailsVisible;
+            const gapDetailsDiv = document.getElementById('gap-details');
+            const gapBtn = document.getElementById('gap-details-btn');
+            
+            if (gapDetailsDiv) {
+                if (gapDetailsVisible) {
+                    gapDetailsDiv.classList.add('show');
+                    updateGapDetailsDisplay(window.heatmapGaps || []);
+                    if (gapBtn) {
+                        gapBtn.textContent = 'Hide Gap Details';
+                    }
+                } else {
+                    gapDetailsDiv.classList.remove('show');
+                    if (gapBtn) {
+                        gapBtn.textContent = 'Show Gap Details';
+                    }
+                }
+            }
+        }
+        
         // Apply current filter to heatmap
         function applyHeatmapFilter() {
             let filtered = allActivitiesForHeatmap;
@@ -1078,7 +1533,8 @@
         // Fetch running statistics from backend
         async function fetchRunningStats() {
             try {
-                const response = await fetch('/api/running-stats');
+                const dateParams = getDateRangeParams();
+                const response = await fetch(`/api/running-stats${dateParams}`);
                 
                 // Check content type to ensure we got JSON
                 const contentType = response.headers.get('content-type');
@@ -1277,7 +1733,10 @@
         // Fetch trends data from backend
         async function fetchTrends() {
             try {
-                const url = `/api/trends?period=${currentTrendsPeriod}&running_only=false`;
+                const dateParams = getDateRangeParams();
+                // dateParams starts with '?', but trends endpoint already has query params, so replace '?' with '&'
+                const dateParamsForTrends = dateParams.replace('?', '&');
+                const url = `/api/trends?period=${currentTrendsPeriod}&running_only=false${dateParamsForTrends}`;
                 const response = await fetch(url);
                 
                 // Check content type
@@ -1551,6 +2010,9 @@
         
         // Open default tab on load and fetch data if authenticated
         window.onload = function() {
+            // Load date range from URL
+            loadDateRangeFromURL();
+            
             if (document.querySelector('.tablinks')) {
                 document.querySelector('.tablinks').click();
             }
@@ -1583,6 +2045,28 @@
 
     <div class="container">
         {{if .Authenticated}}
+            <!-- Date Range Picker -->
+            <div class="date-range-picker">
+                <div class="date-range-presets">
+                    <button id="date-range-7d" class="date-range-btn active" onclick="setDateRange('7d')">Last 7 Days</button>
+                    <button id="date-range-30d" class="date-range-btn" onclick="setDateRange('30d')">Last 30 Days</button>
+                    <button id="date-range-90d" class="date-range-btn" onclick="setDateRange('90d')">Last 90 Days</button>
+                    <button id="date-range-ytd" class="date-range-btn" onclick="setDateRange('ytd')">Year to Date</button>
+                    <button id="date-range-custom" class="date-range-btn" onclick="setDateRange('custom')">Custom</button>
+                </div>
+                <div id="custom-date-range" class="custom-date-range" style="display: none;">
+                    <label>
+                        <span>Start Date</span>
+                        <input type="date" id="custom-start-date">
+                    </label>
+                    <label>
+                        <span>End Date</span>
+                        <input type="date" id="custom-end-date">
+                    </label>
+                    <button onclick="applyCustomDateRange()">Apply Range</button>
+                </div>
+            </div>
+
             <div class="summary-cards">
                 <div class="card">
                     <h4>Date Range</h4>
@@ -1653,6 +2137,9 @@
                         </div>
                         <span>More</span>
                     </div>
+                    
+                    <button id="gap-details-btn" class="gap-details-btn" onclick="toggleGapDetails()" style="display: none;">Show Gap Details</button>
+                    <div id="gap-details" class="gap-details"></div>
                 </div>
                 
                 <div id="heatmap-tooltip" class="heatmap-tooltip"></div>

@@ -24,40 +24,67 @@ type NormalizedActivity struct {
 
 // NormalizeOptions contains options for normalizing activities.
 type NormalizeOptions struct {
-	DaysBack int // Number of days to look back (default: 7)
+	DaysBack  int       // Number of days to look back (default: 7) - used if StartDate/EndDate not set
+	StartDate time.Time // Start date for filtering (inclusive) - if set, overrides DaysBack
+	EndDate   time.Time // End date for filtering (inclusive) - if set, overrides DaysBack
 }
 
 // NormalizeActivities normalizes a slice of activities:
-// - Filters to last N days based on local date (timezone-independent)
+// - Filters to date range based on local date (timezone-independent)
 // - Extracts local date for grouping
 // - Standardizes units (metric base with imperial conversions)
 func NormalizeActivities(activities []Activity, opts *NormalizeOptions) []NormalizedActivity {
 	if opts == nil {
 		opts = &NormalizeOptions{DaysBack: 7}
 	}
-	if opts.DaysBack <= 0 {
-		opts.DaysBack = 7
-	}
 
-	// Calculate cutoff date (today in local time, minus days back)
-	now := time.Now()
-	cutoffDate := truncateToDate(now).AddDate(0, 0, -opts.DaysBack)
-
-	var normalized []NormalizedActivity
-	for _, activity := range activities {
-		// Extract local date from start_date_local
-		// Use the timezone from the activity if available to ensure correct date extraction
-		localDate := extractLocalDate(activity.StartDateLocal, activity.Timezone)
-		
-		// Filter: only include activities that occurred on or after the cutoff date
-		// This ensures activities are included based on their local date, not UTC
-		// Activities are included if they occurred on the cutoff date or later
-		if localDate.Before(cutoffDate) {
-			continue
+	// Determine date range
+	var startDate, endDate time.Time
+	now := truncateToDate(time.Now())
+	
+	if !opts.StartDate.IsZero() && !opts.EndDate.IsZero() {
+		// Use explicit date range
+		startDate = truncateToDate(opts.StartDate)
+		endDate = truncateToDate(opts.EndDate)
+	} else {
+		// Use DaysBack (default behavior)
+		if opts.DaysBack <= 0 {
+			opts.DaysBack = 7
 		}
-
-		normalized = append(normalized, normalizeActivity(activity, localDate))
+		startDate = now.AddDate(0, 0, -opts.DaysBack)
+		endDate = now
 	}
+
+		var normalized []NormalizedActivity
+		for _, activity := range activities {
+			// Extract local date from start_date_local
+			// Use the timezone from the activity if available to ensure correct date extraction
+			localDate := extractLocalDate(activity.StartDateLocal, activity.Timezone)
+			localDateTruncated := truncateToDate(localDate)
+			localDateStr := localDateTruncated.Format("2006-01-02")
+			
+			// Debug: Log activities around Oct 28 and Nov 26 to see what's happening
+			if localDateStr == "2025-10-27" || localDateStr == "2025-10-28" || localDateStr == "2025-10-29" ||
+			   localDateStr == "2025-11-25" || localDateStr == "2025-11-26" || localDateStr == "2025-11-27" {
+				fmt.Printf("DEBUG normalize: ID=%d, Name=%s, StartDateLocal=%s, Timezone=%s, LocalDateStr=%s, StartDate=%s, EndDate=%s, Before=%v, After=%v\n",
+					activity.ID, activity.Name, activity.StartDateLocal.Format(time.RFC3339), activity.Timezone,
+					localDateStr, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"),
+					localDateTruncated.Before(startDate), localDateTruncated.After(endDate))
+			}
+			
+			// Filter: only include activities within the date range (inclusive on both ends)
+			// This ensures activities are included based on their local date, not UTC
+			// Use !Before and !After to make it inclusive
+			if localDateTruncated.Before(startDate) || localDateTruncated.After(endDate) {
+				if localDateStr == "2025-10-27" || localDateStr == "2025-10-28" || localDateStr == "2025-10-29" {
+					fmt.Printf("DEBUG: Activity filtered out: ID=%d, LocalDateStr=%s, StartDate=%s, EndDate=%s\n",
+						activity.ID, localDateStr, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+				}
+				continue
+			}
+
+			normalized = append(normalized, normalizeActivity(activity, localDate))
+		}
 
 	return normalized
 }
@@ -101,33 +128,25 @@ func normalizeActivity(activity Activity, localDate time.Time) NormalizedActivit
 // Otherwise, we extract the date components directly, which works because the
 // date part of start_date_local is what we want regardless of timezone conversion.
 func extractLocalDate(t time.Time, timezone string) time.Time {
-	// The key insight: start_date_local from Strava represents local time in the user's timezone.
-	// When Go's JSON unmarshaler parses it:
-	// - If the string has a timezone offset (e.g., "2024-11-25T23:00:00-08:00"), it converts to UTC
-	// - If the string has no timezone, it might parse as UTC or local time
+	// CRITICAL: The user wants activities to be counted based on the day they occurred
+	// in the local timezone, independent of UTC conversion.
 	//
-	// Problem: If it's converted to UTC, the UTC date might be different from the local date.
-	// Example: "2024-11-25T23:00:00-08:00" (11 PM PST) = "2024-11-26T07:00:00Z" (7 AM UTC next day)
-	// - UTC date: Nov 26
-	// - Local date: Nov 25 (what we want)
+	// PROBLEM: Strava's `start_date_local` field is named "local" but when Go's JSON
+	// unmarshaler parses a string like "2025-11-26T06:04:47Z", the Z means UTC, so it
+	// converts it to UTC time. However, the date part (2025-11-26) in the original string
+	// represents the LOCAL date we want.
 	//
-	// Solution: Use the timezone field to convert back to local time, then extract the date.
-	if timezone != "" {
-		loc, err := time.LoadLocation(timezone)
-		if err == nil {
-			// Convert to local timezone and extract date
-			localTime := t.In(loc)
-			year, month, day := localTime.Date()
-			return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-		}
-		// If LoadLocation fails, try common timezone name mappings
-		// Strava might return formats like "(GMT-08:00) Pacific Time" or "America/Los_Angeles"
-	}
+	// OBSERVATION: From the logs, we see that activities like "Fartleks" have:
+	// - StartDateLocal=2025-11-26T06:04:47Z (6:04 AM UTC on Nov 26)
+	// - When converted to Pacific Time: 2025-11-25T22:04:47-08:00 (10:04 PM on Nov 25)
+	// - But the user wants it to be Nov 26
+	//
+	// SOLUTION: Extract the date from the UTC time directly, since Strava's `start_date_local`
+	// appears to send the local date as if it were UTC. The date component (YYYY-MM-DD) in
+	// the UTC time represents the local date we want.
 	
-	// Fallback: Extract date from the time as-is.
-	// This works if the time wasn't converted to UTC, or if the date components
-	// happen to match the local date. Not perfect, but better than nothing.
-	year, month, day := t.Date()
+	// Extract date from UTC time - the date part represents the local date
+	year, month, day := t.UTC().Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 }
 

@@ -86,16 +86,23 @@ func CalculateRunningStats(activities []NormalizedActivity) RunningStats {
 		totalDistance += activity.Distance
 		totalMovingTime += activity.MovingTime
 
-		// Count runs over 10K (10000 meters)
-		if activity.Distance >= 10000 {
+		// Count runs over 10K (10000 meters = 10 kilometers)
+		// Use a small tolerance (9999.5m) to account for GPS precision issues
+		// This ensures runs that are very close to 10K (like 9.99km) are still counted
+		const tenKThreshold = 9999.5 // meters
+		if activity.Distance >= tenKThreshold {
 			runsOver10K++
+		} else {
+			// Log runs that are under 10K for debugging
+			fmt.Printf("Run under 10K: ID=%d, Distance=%.2f meters (%.2f km, %.2f mi), Name=%s\n", 
+				activity.ID, activity.Distance, activity.Distance/1000.0, activity.Distance/1609.34, activity.Name)
 		}
 	}
 
 	// Log for debugging
 	if totalActivities > 0 {
-		fmt.Printf("RunningStats: total activities=%d, running activities=%d, non-running types=%v\n", 
-			totalActivities, runningActivities, nonRunningTypes)
+		fmt.Printf("RunningStats: total activities=%d, running activities=%d, runs over 10K=%d, non-running types=%v\n", 
+			totalActivities, runningActivities, runsOver10K, nonRunningTypes)
 	}
 
 	stats.RunsOver10K = runsOver10K

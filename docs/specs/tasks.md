@@ -43,9 +43,10 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 5.6: Render Trends (Line charts) for pacing and distance. Allow toggle for daily, weekly, and monthly.
 
 ## Phase 6: Refinement & Interactivity
-- [ ] 6.1: Implement Date Range Picker with preselect for Last 7 Days, 30 days, 90 days, YTD, Custom (show date picker for start and end date).
+- [x] 6.1: Implement Date Range Picker with preselect for Last 7 Days, 30 days, 90 days, YTD, Custom (show date picker for start and end date).
 - [ ] 6.2: Implement Unit Toggle (Metric/Imperial).
-- [ ] 6.3: Implement error handling (empty states hiding tabs, API failures).
-- [ ] 6.4: Optimize initial load time (concurrent fetching).
-- [ ] 6.5: Ensure dashboard responsiveness.
-- [ ] 6.6: Verify client-side unit conversion logic.
+- [ ] 6.3: Add spinners while the data is loaded.
+- [ ] 6.4: Implement error handling (empty states hiding tabs, API failures).
+- [ ] 6.5: Optimize initial load time (concurrent fetching).
+- [ ] 6.6: Ensure dashboard responsiveness.
+- [ ] 6.7: Verify client-side unit conversion logic.

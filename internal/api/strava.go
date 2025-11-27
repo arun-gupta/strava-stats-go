@@ -196,9 +196,11 @@ func (c *Client) FetchAllActivities(ctx context.Context, token *oauth2.Token, op
 	
 	// If opts is provided, use its parameters but override page and per_page for pagination
 	paginationOpts := &FetchActivitiesOptions{
-		Before:  opts.Before,
-		After:   opts.After,
 		PerPage: &perPage,
+	}
+	if opts != nil {
+		paginationOpts.Before = opts.Before
+		paginationOpts.After = opts.After
 	}
 	
 	for {
