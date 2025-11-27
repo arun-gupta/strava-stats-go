@@ -63,12 +63,25 @@ To start the application and automatically open it in your browser (at http://lo
 
 <div align="center">
 
+### Overview Tab
+**Activity distribution and summary**
 [<img src="docs/images/overview.png" alt="Overview Tab" width="300" />](docs/images/overview.png)
-[<img src="docs/images/duration.png" alt="Duration Tab" width="300" />](docs/images/duration.png)
-[<img src="docs/images/heatmap-all.png" alt="Heatmap - All Activities" width="300" />](docs/images/heatmap-all.png)
 
+### Duration Tab
+**Moving time distribution by sport type**
+[<img src="docs/images/duration.png" alt="Duration Tab" width="300" />](docs/images/duration.png)
+
+### Heatmap Tab
+**All Activities View** | **Running Only View**
+[<img src="docs/images/heatmap-all.png" alt="Heatmap - All Activities" width="300" />](docs/images/heatmap-all.png)
 [<img src="docs/images/heatmap-running.png" alt="Heatmap - Running Only" width="300" />](docs/images/heatmap-running.png)
+
+### Running Stats Tab
+**Running statistics and distance distribution**
 [<img src="docs/images/running-stats.png" alt="Running Statistics" width="300" />](docs/images/running-stats.png)
+
+### Trends Tab
+**Distance and pace trends over time**
 [<img src="docs/images/trends.png" alt="Trends Analysis" width="300" />](docs/images/trends.png)
 
 </div>
