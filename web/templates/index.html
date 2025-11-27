@@ -1821,6 +1821,19 @@
         // Fetch running statistics from backend
         async function fetchRunningStats() {
             try {
+                // Show loading spinners (only if not already showing)
+                const runningStatsElements = ['total-runs', 'runs-over-10k', 'total-distance', 'average-pace', 'fastest-10k', 'longest-run'];
+                runningStatsElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.querySelector('.spinner')) {
+                        el.innerHTML = '<div class="spinner"></div>';
+                    }
+                });
+                const histogramContainer = document.getElementById('distanceHistogramChart');
+                if (histogramContainer && histogramContainer.parentElement && !histogramContainer.parentElement.querySelector('.loading-container')) {
+                    showLoading('distanceHistogramChart', 'Loading histogram...');
+                }
+                
                 const dateParams = getDateRangeParams();
                 const response = await fetch(`/api/running-stats${dateParams}`);
                 
@@ -2053,6 +2066,16 @@
         // Fetch trends data from backend
         async function fetchTrends() {
             try {
+                // Show loading spinners (only if not already showing)
+                const distanceCtx = document.getElementById('distanceTrendChart');
+                const paceCtx = document.getElementById('paceTrendChart');
+                if (distanceCtx && distanceCtx.parentElement && !distanceCtx.parentElement.querySelector('.loading-container')) {
+                    showLoading('distanceTrendChart', 'Loading distance trends...');
+                }
+                if (paceCtx && paceCtx.parentElement && !paceCtx.parentElement.querySelector('.loading-container')) {
+                    showLoading('paceTrendChart', 'Loading pace trends...');
+                }
+                
                 const dateParams = getDateRangeParams();
                 // dateParams starts with '?', but trends endpoint already has query params, so replace '?' with '&'
                 const dateParamsForTrends = dateParams.replace('?', '&');

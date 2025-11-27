@@ -47,6 +47,6 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 6.2: Implement Unit Toggle (Metric/Imperial).
 - [x] 6.3: Add spinners while the data is loaded.
 - [x] 6.4: Implement error handling (empty states hiding tabs, API failures).
-- [ ] 6.5: Optimize initial load time (concurrent fetching).
+- [x] 6.5: Optimize initial load time (concurrent fetching).
 - [ ] 6.6: Ensure dashboard responsiveness.
 - [ ] 6.7: Verify client-side unit conversion logic.
