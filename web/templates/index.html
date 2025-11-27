@@ -553,8 +553,11 @@
         }
         
         /* Date Range Picker Styles */
+        .date-range-wrapper {
+            width: 100%;
+        }
         .date-range-picker {
-            margin-bottom: 30px;
+            margin-bottom: 0;
             padding: 24px;
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             border-radius: 12px;
@@ -694,6 +697,255 @@
         .unit-btn.active {
             background: #fc4c02;
             color: white;
+        }
+        
+        /* Responsive Design - Mobile First Approach */
+        @media (max-width: 768px) {
+            /* Navbar adjustments for mobile */
+            .navbar {
+                padding: 10px 15px;
+                flex-wrap: wrap;
+            }
+            .navbar-brand {
+                font-size: 1rem;
+                margin-bottom: 5px;
+            }
+            .navbar-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 5px;
+            }
+            .user-info {
+                gap: 10px;
+            }
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+            .btn-logout {
+                padding: 4px 8px;
+                font-size: 0.85rem;
+            }
+            
+            /* Container adjustments */
+            .container {
+                margin: 10px;
+                padding: 15px;
+                max-width: 100%;
+            }
+            
+            /* Summary cards stack on mobile */
+            .summary-cards {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .card {
+                padding: 15px;
+            }
+            .card .value {
+                font-size: 1.3rem;
+            }
+            
+            /* Tabs wrap on mobile */
+            .tab {
+                flex-wrap: wrap;
+                border-radius: 5px;
+            }
+            .tab button {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+                flex: 1 1 auto;
+                min-width: calc(50% - 2px);
+            }
+            .tabcontent {
+                padding: 15px;
+            }
+            
+            /* Date range picker stacks on mobile */
+            .date-range-picker {
+                padding: 15px;
+            }
+            .date-range-presets {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .date-range-btn {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+                flex: 1 1 auto;
+                min-width: calc(50% - 3px);
+            }
+            .custom-date-range {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .custom-date-range label {
+                width: 100%;
+            }
+            .custom-date-range input {
+                width: 100%;
+            }
+            
+            /* Date range picker and unit toggle stack */
+            .date-range-wrapper {
+                flex-direction: column;
+            }
+            .date-range-picker {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+            .unit-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            /* Chart containers adjust for mobile */
+            .chart-container {
+                height: 300px;
+            }
+            .chart-wrapper {
+                padding: 15px;
+            }
+            
+            /* Activity list adjustments */
+            .activity-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px;
+            }
+            .activity-stats {
+                width: 100%;
+                margin-top: 10px;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .activity-stat {
+                flex: 1 1 auto;
+                min-width: calc(50% - 5px);
+            }
+            
+            /* Heatmap adjustments */
+            .heatmap-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .heatmap-grid {
+                min-width: 600px; /* Ensure minimum width for readability */
+            }
+            .heatmap-toggle {
+                flex-wrap: wrap;
+            }
+            .heatmap-toggle button {
+                flex: 1 1 auto;
+                min-width: calc(50% - 5px);
+            }
+            
+            /* Running stats grid stacks */
+            .running-summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 12px;
+            }
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            .pr-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Trends controls stack */
+            .trends-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .trends-period {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            .trends-period button {
+                flex: 1 1 auto;
+                min-width: calc(33.33% - 7px);
+            }
+            
+            /* Gap details adjustments */
+            .gap-dates {
+                gap: 6px;
+            }
+            .gap-date {
+                font-size: 0.8rem;
+                padding: 3px 8px;
+            }
+            
+            /* Error states */
+            .error-state {
+                padding: 20px 15px;
+            }
+            .error-state h4 {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small devices */
+            .navbar-brand {
+                font-size: 0.9rem;
+            }
+            .tab button {
+                font-size: 0.75rem;
+                padding: 8px 10px;
+                min-width: 100%;
+            }
+            .date-range-btn {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+                min-width: 100%;
+            }
+            .card .value {
+                font-size: 1.1rem;
+            }
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            .chart-container {
+                height: 250px;
+            }
+            .running-summary {
+                grid-template-columns: 1fr;
+            }
+            .activity-stats {
+                flex-direction: column;
+            }
+            .activity-stat {
+                width: 100%;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+            /* Tablet adjustments */
+            .container {
+                max-width: 90%;
+                padding: 25px;
+            }
+            .summary-cards {
+                gap: 15px;
+            }
+            .running-summary {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .pr-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            /* Desktop - ensure proper spacing */
+            .container {
+                max-width: 1200px;
+            }
         }
     </style>
     <script>
