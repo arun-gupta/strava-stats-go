@@ -971,12 +971,13 @@
         // Unit preference state (default to imperial)
         let useMetric = false; // false = imperial (miles), true = metric (km)
         
-        // Load unit preference from localStorage
+        // Load unit preference from localStorage (default to imperial)
         function loadUnitPreference() {
             const saved = localStorage.getItem('unitPreference');
             if (saved === 'metric') {
                 useMetric = true;
             } else {
+                // Default to imperial if no preference saved or preference is 'imperial'
                 useMetric = false;
             }
             updateUnitToggleUI();
