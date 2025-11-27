@@ -484,6 +484,27 @@
             color: #666;
             padding: 20px;
         }
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #d32f2f;
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .error-state h4 {
+            margin: 0 0 10px 0;
+            color: #c62828;
+        }
+        .error-state p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .tab-hidden {
+            display: none !important;
+        }
         .empty-state {
             text-align: center;
             color: #999;
@@ -943,6 +964,67 @@
             });
         }
         
+        // Helper function to show error state
+        function showError(elementId, title, message, suggestion = '') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                let html = `<div class="error-state">
+                    <h4>⚠️ ${title}</h4>
+                    <p>${message}</p>`;
+                if (suggestion) {
+                    html += `<p style="font-size: 0.85rem; margin-top: 10px;">${suggestion}</p>`;
+                }
+                html += `</div>`;
+                element.innerHTML = html;
+            }
+        }
+        
+        // Helper function to hide tabs when there's an error or no data
+        function hideTabsForError(tabNames) {
+            tabNames.forEach(tabName => {
+                // Find the tab button
+                const tabButtons = document.querySelectorAll('.tablinks');
+                tabButtons.forEach(btn => {
+                    if (btn.textContent.includes(tabName)) {
+                        btn.style.display = 'none';
+                        btn.classList.add('tab-hidden');
+                    }
+                });
+            });
+        }
+        
+        // Helper function to show tabs (when data is available)
+        function showTabs(tabNames) {
+            tabNames.forEach(tabName => {
+                const tabButtons = document.querySelectorAll('.tablinks');
+                tabButtons.forEach(btn => {
+                    if (btn.textContent.includes(tabName)) {
+                        btn.style.display = 'inline-block';
+                        btn.classList.remove('tab-hidden');
+                    }
+                });
+            });
+        }
+        
+        // Helper function to check if we have data and show/hide tabs accordingly
+        function updateTabVisibility(activities) {
+            const hasActivities = activities && activities.length > 0;
+            const hasRunningActivities = hasActivities && activities.some(a => 
+                a.sport_type === 'Run' || a.sport_type === 'VirtualRun' || a.sport_type === 'TrailRun'
+            );
+            
+            // Overview tab is always visible
+            // Show Duration and Heatmap tabs if we have any activities
+            if (hasActivities) {
+                showTabs(['Duration', 'Heatmap']);
+            } else {
+                hideTabsForError(['Duration', 'Heatmap']);
+            }
+            
+            // Running Stats and Trends tabs visibility will be updated when their data loads
+            // (handled in updateRunningStats and updateTrends functions)
+        }
+        
         // Fetch activities data from API
         async function fetchActivities() {
             try {
@@ -990,6 +1072,9 @@
                 // Update summary cards
                 updateSummaryCards(data);
                 
+                // Update tab visibility based on available data
+                updateTabVisibility(data.activities || []);
+                
                 // Store backend-provided date range for heatmap
                 backendStartDate = data.startDate || null;
                 backendEndDate = data.endDate || null;
@@ -1025,22 +1110,27 @@
                 fetchTrends();
             } catch (error) {
                 console.error('Error fetching activities:', error);
-                // Show error in summary cards (show full error in console, truncated in UI)
-                const errorMsg = error.message || 'Error';
-                console.error('Full error message:', errorMsg);
-                const shortMsg = errorMsg.length > 30 ? errorMsg.substring(0, 27) + '...' : errorMsg;
+                // Show error in summary cards
+                const errorMsg = error.message || 'Error loading data';
                 const card1 = document.querySelector('.card:nth-child(1) .value');
                 const card2 = document.querySelector('.card:nth-child(2) .value');
                 const card3 = document.querySelector('.card:nth-child(3) .value');
-                if (card1) card1.textContent = shortMsg;
-                if (card2) card2.textContent = shortMsg;
-                if (card3) card3.textContent = shortMsg;
+                if (card1) card1.innerHTML = '<span style="color: #d32f2f;">Error</span>';
+                if (card2) card2.innerHTML = '<span style="color: #d32f2f;">Error</span>';
+                if (card3) card3.innerHTML = '<span style="color: #d32f2f;">Error</span>';
                 
-                // Also update activities list to show error
+                // Show error in activities list
                 const activitiesList = document.getElementById('activities-list');
                 if (activitiesList) {
-                    activitiesList.innerHTML = '<div class="empty-state">Error loading activities. Check console for details.</div>';
+                    activitiesList.innerHTML = `<div class="error-state">
+                        <h4>⚠️ Error Loading Activities</h4>
+                        <p>${errorMsg}</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px;">Please try refreshing the page or selecting a different date range.</p>
+                    </div>`;
                 }
+                
+                // Hide tabs that depend on activities data
+                hideTabsForError(['Duration', 'Heatmap', 'Running Stats', 'Trends']);
             }
         }
         
@@ -1079,6 +1169,14 @@
         }
         
         function updateActivitiesList(activities) {
+            // Check if we have activities, show empty state if not
+            if (!activities || activities.length === 0) {
+                const container = document.getElementById('activities-list');
+                if (container) {
+                    container.innerHTML = '<div class="empty-state">No activities found for the selected date range.</div>';
+                }
+                return;
+            }
             const container = document.getElementById('activities-list');
             if (!container) return;
             
@@ -1751,12 +1849,18 @@
                 updateRunningStats(data);
             } catch (error) {
                 console.error('Error fetching running stats:', error);
-                // Show error in summary cards
-                const totalRunsEl = document.getElementById('total-runs');
-                if (totalRunsEl) {
-                    totalRunsEl.textContent = 'Error';
-                    totalRunsEl.title = error.message || 'Error loading data';
+                // Show error in running stats
+                const runningStatsContainer = document.querySelector('#RunningStats .running-summary');
+                if (runningStatsContainer) {
+                    runningStatsContainer.innerHTML = `<div class="error-state">
+                        <h4>⚠️ Error Loading Running Stats</h4>
+                        <p>${error.message || 'Failed to load running statistics'}</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px;">Please try refreshing the page.</p>
+                    </div>`;
                 }
+                
+                // Hide Running Stats tab on error
+                hideTabsForError(['Running Stats']);
             }
         }
         
@@ -1768,6 +1872,14 @@
             const histogram = data.histogram || {};
             
             console.log('Parsed data:', { stats, prs, histogram });
+            
+            // Show Running Stats tab if we have data
+            if (stats.total_runs > 0) {
+                showTabs(['Running Stats']);
+            } else {
+                // Hide if no running data
+                hideTabsForError(['Running Stats']);
+            }
             
             // Update summary statistics
             const totalRunsEl = document.getElementById('total-runs');
@@ -1968,14 +2080,17 @@
                 updateTrends(data);
             } catch (error) {
                 console.error('Error fetching trends:', error);
-                const distanceCtx = document.getElementById('distanceTrendChart');
-                const paceCtx = document.getElementById('paceTrendChart');
-                if (distanceCtx && distanceCtx.parentElement) {
-                    distanceCtx.parentElement.innerHTML = '<div class="error">Error loading trends: ' + (error.message || 'Unknown error') + '</div>';
+                const trendsContainer = document.getElementById('Trends');
+                if (trendsContainer) {
+                    trendsContainer.innerHTML = `<div class="error-state">
+                        <h4>⚠️ Error Loading Trends</h4>
+                        <p>${error.message || 'Failed to load trend data'}</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px;">Please try refreshing the page or selecting a different date range.</p>
+                    </div>`;
                 }
-                if (paceCtx && paceCtx.parentElement) {
-                    paceCtx.parentElement.innerHTML = '<div class="error">Error loading trends: ' + (error.message || 'Unknown error') + '</div>';
-                }
+                
+                // Hide Trends tab on error
+                hideTabsForError(['Trends']);
             }
         }
         
