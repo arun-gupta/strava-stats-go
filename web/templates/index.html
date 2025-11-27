@@ -227,6 +227,36 @@
             color: #666;
         }
         
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(252, 76, 2, 0.2);
+            border-radius: 50%;
+            border-top-color: #fc4c02;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner-large {
+            width: 40px;
+            height: 40px;
+            border-width: 4px;
+        }
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            color: #666;
+        }
+        .loading-text {
+            font-size: 0.9rem;
+        }
+        
         /* Chart containers */
         .chart-container {
             position: relative;
@@ -866,7 +896,7 @@
             const start = urlParams.get('start_date');
             const end = urlParams.get('end_date');
             
-            if (range && ['7d', '30d', '90d', 'ytd', 'custom'].includes(range)) {
+            if (range && ['7d', '30d', '90d', '6m', 'ytd', 'custom'].includes(range)) {
                 currentDateRange = range;
                 if (range === 'custom' && start && end) {
                     customStartDate = start;
@@ -897,9 +927,32 @@
             fetchTrends();
         }
         
+        // Helper function to show loading spinner
+        function showLoading(elementId, text = 'Loading...') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `<div class="loading-container"><div class="spinner"></div><span class="loading-text">${text}</span></div>`;
+            }
+        }
+        
+        // Helper function to show loading in summary cards
+        function showSummaryCardsLoading() {
+            const cards = document.querySelectorAll('.card .value');
+            cards.forEach(card => {
+                card.innerHTML = '<div class="spinner"></div>';
+            });
+        }
+        
         // Fetch activities data from API
         async function fetchActivities() {
             try {
+                // Show loading spinners
+                showSummaryCardsLoading();
+                const activitiesList = document.getElementById('activities-list');
+                if (activitiesList) {
+                    showLoading('activities-list', 'Loading activities...');
+                }
+                
                 const dateParams = getDateRangeParams();
                 const url = `/api/activities${dateParams}`;
                 console.log('Fetching activities from:', url);
@@ -958,7 +1011,11 @@
                 // Update moving time chart
                 updateMovingTimeChart(data.activities || []);
                 
-                // Update heatmap
+                // Update heatmap (show loading first)
+                const heatmapContainer = document.getElementById('heatmap-grid-container');
+                if (heatmapContainer) {
+                    showLoading('heatmap-grid-container', 'Loading heatmap...');
+                }
                 updateHeatmap(data.activities || []);
                 
                 // Fetch and update running stats
@@ -1145,6 +1202,12 @@
             const canvas = document.getElementById('activityCountsChart');
             if (!canvas) return;
             
+            // Clear loading spinner if present
+            const container = canvas.parentElement;
+            if (container && container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="activityCountsChart"></canvas>';
+            }
+            
             // Calculate activity counts by sport type
             const counts = calculateActivityCountsBySport(activities);
             
@@ -1244,6 +1307,12 @@
         function updateMovingTimeChart(activities) {
             const canvas = document.getElementById('movingTimeChart');
             if (!canvas) return;
+            
+            // Clear loading spinner if present
+            const container = canvas.parentElement;
+            if (container && container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="movingTimeChart"></canvas>';
+            }
             
             // Calculate moving time by sport type
             const timeBySport = calculateMovingTimeBySport(activities);
@@ -1421,6 +1490,11 @@
         function renderHeatmap(activities) {
             const container = document.getElementById('heatmap-grid-container');
             if (!container) return;
+            
+            // Clear any loading spinner (but keep the container structure)
+            if (container.querySelector('.loading-container')) {
+                container.innerHTML = '';
+            }
             
             // Use backend-provided date range - this is the source of truth
             let startDateStr = backendStartDate;
@@ -1769,6 +1843,12 @@
                 return;
             }
             
+            // Clear loading spinner if present
+            const container = ctx.parentElement;
+            if (container && container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="distanceHistogramChart"></canvas>';
+            }
+            
             const bins = histogram.bins || [];
             console.log('Updating histogram with', bins.length, 'bins');
             
@@ -1921,6 +2001,12 @@
                 return;
             }
             
+            // Clear loading spinner if present
+            const container = ctx.parentElement;
+            if (container && container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="distanceTrendChart"></canvas>';
+            }
+            
             if (points.length === 0) {
                 const container = ctx.parentElement;
                 if (container) {
@@ -2011,6 +2097,12 @@
             if (!ctx) {
                 console.warn('Pace trend chart canvas not found');
                 return;
+            }
+            
+            // Clear loading spinner if present
+            const container = ctx.parentElement;
+            if (container && container.querySelector('.loading-container')) {
+                container.innerHTML = '<canvas id="paceTrendChart"></canvas>';
             }
             
             if (points.length === 0) {
