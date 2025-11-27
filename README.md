@@ -2,62 +2,44 @@
 
 A web application that authenticates users via Strava, fetches their activity history, and presents read-only interactive analytics.
 
-## Getting Started
+## Quick Start
 
 ### Prerequisites
-*   Go 1.25.4 or higher.
+*   Go 1.25.4 or higher
 
-### Configuration
+### Run the Application
 
-1. **Copy the example environment file:**
+1. **Get your Strava API credentials:**
+   *   Visit [Strava API Settings](https://www.strava.com/settings/api)
+   *   Create a new application
+   *   Copy your `Client ID` and `Client Secret`
+
+2. **Set up environment variables:**
    ```bash
    cp .env.example .env
    ```
-
-2. **Get your Strava API credentials:**
-   *   Visit [Strava API Settings](https://www.strava.com/settings/api)
-   *   Create a new application or use an existing one
-   *   Copy your `Client ID` and `Client Secret`
-
-3. **Generate a secure SESSION_SECRET:**
    
-   The `SESSION_SECRET` is required for secure session management. Generate a secure random string using one of these methods:
-   
-   **Option 1: Using OpenSSL (recommended)**
-   ```bash
-   openssl rand -hex 32
-   ```
-   
-   **Option 2: Using Python**
-   ```bash
-   python3 -c "import secrets; print(secrets.token_hex(32))"
-   ```
-   
-   **Option 3: Using Node.js**
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-   ```
-   
-   Copy the generated value and add it to your `.env` file:
-   ```bash
-   SESSION_SECRET=your-generated-secret-here
-   ```
-
-4. **Update your `.env` file:**
+   Edit `.env` and add your credentials:
    ```bash
    STRAVA_CLIENT_ID=your_client_id_here
    STRAVA_CLIENT_SECRET=your_client_secret_here
-   SESSION_SECRET=your-generated-secret-here
+   SESSION_SECRET=$(openssl rand -hex 32)
    PORT=8080
    ```
 
-### Quickstart
+3. **Start the application:**
+   ```bash
+   ./quickstart.sh
+   ```
+   
+   The application will open automatically at http://localhost:8080
 
-To start the application and automatically open it in your browser (at http://localhost:8080):
+## Configuration
 
-```bash
-./quickstart.sh
-```
+For detailed configuration options, see the `.env.example` file. The `SESSION_SECRET` can be generated using:
+- `openssl rand -hex 32` (recommended)
+- `python3 -c "import secrets; print(secrets.token_hex(32))"`
+- `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ## Screenshots
 
