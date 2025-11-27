@@ -940,12 +940,25 @@
             }
         }
         
-        // Refresh all dashboard data
-        function refreshAllData() {
+        // Refresh all dashboard data (concurrent fetching for better performance)
+        async function refreshAllData() {
             updateURLWithDateRange();
-            fetchActivities();
-            fetchRunningStats();
-            fetchTrends();
+            
+            // Fetch all data concurrently using Promise.allSettled
+            // This ensures all requests start at the same time and errors in one don't block others
+            const results = await Promise.allSettled([
+                fetchActivities(),
+                fetchRunningStats(),
+                fetchTrends()
+            ]);
+            
+            // Log any failures for debugging
+            results.forEach((result, index) => {
+                const endpoints = ['activities', 'running-stats', 'trends'];
+                if (result.status === 'rejected') {
+                    console.error(`Failed to fetch ${endpoints[index]}:`, result.reason);
+                }
+            });
         }
         
         // Helper function to show loading spinner
@@ -1103,11 +1116,8 @@
                 }
                 updateHeatmap(data.activities || []);
                 
-                // Fetch and update running stats
-                fetchRunningStats();
-                
-                // Fetch and update trends
-                fetchTrends();
+                // Note: Running stats and trends are now fetched concurrently in refreshAllData()
+                // No need to fetch them here sequentially
             } catch (error) {
                 console.error('Error fetching activities:', error);
                 // Show error in summary cards
@@ -2363,9 +2373,9 @@
             if (document.querySelector('.tablinks')) {
                 document.querySelector('.tablinks').click();
             }
-            // Fetch activities if user is authenticated (summary cards are visible)
+            // Fetch all data concurrently if user is authenticated (summary cards are visible)
             if (document.querySelector('.summary-cards')) {
-                fetchActivities();
+                refreshAllData();
             }
         };
     </script>
