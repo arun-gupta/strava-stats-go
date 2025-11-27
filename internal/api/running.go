@@ -10,6 +10,7 @@ type RunningStats struct {
 	TotalRuns      int     `json:"total_runs"`
 	RunsOver10K    int     `json:"runs_over_10k"`
 	TotalDistance  float64 `json:"total_distance"`  // in meters
+	TotalDistanceKm float64 `json:"total_distance_km"` // in kilometers
 	TotalDistanceMiles float64 `json:"total_distance_miles"`
 	AveragePace    string  `json:"average_pace"`   // formatted as "X:XX min/mi"
 	AveragePaceMinPerKm string `json:"average_pace_min_per_km"` // formatted as "X:XX min/km"
@@ -29,6 +30,7 @@ type RunRecord struct {
 	Name            string  `json:"name"`
 	Date            string  `json:"date"`            // YYYY-MM-DD
 	Distance        float64 `json:"distance"`      // in meters
+	DistanceKm      float64 `json:"distance_km"`   // in kilometers
 	DistanceMiles   float64 `json:"distance_miles"`
 	MovingTime      int     `json:"moving_time"`   // in seconds
 	Pace            string  `json:"pace"`          // formatted as "X:XX min/mi"
@@ -48,6 +50,7 @@ type HistogramBin struct {
 	RangeKm    string `json:"range_km"`  // e.g., "0-1 km", "1-2 km"
 	Count      int    `json:"count"`
 	Distance   float64 `json:"distance"`  // total distance in this bin (meters)
+	DistanceKm float64 `json:"distance_km"` // total distance in this bin (kilometers)
 	DistanceMiles float64 `json:"distance_miles"`
 }
 
@@ -107,6 +110,7 @@ func CalculateRunningStats(activities []NormalizedActivity) RunningStats {
 
 	stats.RunsOver10K = runsOver10K
 	stats.TotalDistance = totalDistance
+	stats.TotalDistanceKm = totalDistance / 1000.0
 	stats.TotalDistanceMiles = totalDistance / 1609.34
 
 	// Calculate average pace (min/mi and min/km)
@@ -235,6 +239,7 @@ func GenerateDistanceHistogram(activities []NormalizedActivity, useMiles bool) D
 			RangeKm: rangeLabelKm,
 			Count:   0,
 			Distance: 0,
+			DistanceKm: 0,
 			DistanceMiles: 0,
 		}
 	}
@@ -248,6 +253,7 @@ func GenerateDistanceHistogram(activities []NormalizedActivity, useMiles bool) D
 		if binIndex >= 0 && binIndex < numBins {
 			bins[binIndex].Count++
 			bins[binIndex].Distance += run.Distance
+			bins[binIndex].DistanceKm += run.Distance / 1000.0
 			bins[binIndex].DistanceMiles += run.Distance / 1609.34
 		}
 	}
@@ -270,6 +276,7 @@ func createRunRecord(activity NormalizedActivity) *RunRecord {
 		Name:            activity.Name,
 		Date:            activity.LocalDateStr,
 		Distance:        activity.Distance,
+		DistanceKm:      activity.DistanceKm,
 		DistanceMiles:   activity.DistanceMiles,
 		MovingTime:      activity.MovingTime,
 		ElevationGain:   activity.TotalElevationGain,

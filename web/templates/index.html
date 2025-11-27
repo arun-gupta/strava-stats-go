@@ -619,6 +619,31 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(252, 76, 2, 0.3);
         }
+        
+        /* Unit Toggle Styles */
+        .unit-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .unit-btn {
+            padding: 8px 16px;
+            border: 2px solid #fc4c02;
+            background: white;
+            color: #fc4c02;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .unit-btn:hover {
+            background: rgba(252, 76, 2, 0.1);
+        }
+        .unit-btn.active {
+            background: #fc4c02;
+            color: white;
+        }
     </style>
     <script>
         function openTab(evt, tabName) {
@@ -639,6 +664,84 @@
         let currentDateRange = '7d'; // '7d', '30d', '90d', 'ytd', 'custom'
         let customStartDate = null;
         let customEndDate = null;
+        
+        // Unit preference state (default to imperial)
+        let useMetric = false; // false = imperial (miles), true = metric (km)
+        
+        // Load unit preference from localStorage
+        function loadUnitPreference() {
+            const saved = localStorage.getItem('unitPreference');
+            if (saved === 'metric') {
+                useMetric = true;
+            } else {
+                useMetric = false;
+            }
+            updateUnitToggleUI();
+        }
+        
+        // Save unit preference to localStorage
+        function saveUnitPreference() {
+            localStorage.setItem('unitPreference', useMetric ? 'metric' : 'imperial');
+        }
+        
+        // Toggle unit preference
+        function toggleUnits() {
+            useMetric = !useMetric;
+            saveUnitPreference();
+            updateUnitToggleUI();
+            // Refresh all data to update displays
+            refreshAllData();
+        }
+        
+        // Update unit toggle UI
+        function updateUnitToggleUI() {
+            const metricBtn = document.getElementById('unit-metric');
+            const imperialBtn = document.getElementById('unit-imperial');
+            if (metricBtn && imperialBtn) {
+                if (useMetric) {
+                    metricBtn.classList.add('active');
+                    imperialBtn.classList.remove('active');
+                } else {
+                    metricBtn.classList.remove('active');
+                    imperialBtn.classList.add('active');
+                }
+            }
+        }
+        
+        // Helper function to format distance
+        function formatDistance(km, miles) {
+            if (useMetric) {
+                if (km >= 0.1) {
+                    return km.toFixed(2) + ' km';
+                } else {
+                    return (km * 1000).toFixed(0) + ' m';
+                }
+            } else {
+                if (miles >= 0.1) {
+                    return miles.toFixed(2) + ' mi';
+                } else {
+                    return (miles * 5280).toFixed(0) + ' ft';
+                }
+            }
+        }
+        
+        // Helper function to format speed
+        function formatSpeed(kmh, mph) {
+            if (useMetric) {
+                return kmh.toFixed(1) + ' km/h';
+            } else {
+                return mph.toFixed(1) + ' mph';
+            }
+        }
+        
+        // Helper function to get pace string (backend provides both formats)
+        function getPace(paceMinPerMi, paceMinPerKm) {
+            if (useMetric) {
+                return paceMinPerKm || paceMinPerMi; // Fallback if km version not available
+            } else {
+                return paceMinPerMi || paceMinPerKm; // Fallback if mi version not available
+            }
+        }
         
         // Get date range parameters for API calls
         function getDateRangeParams() {
@@ -957,11 +1060,10 @@
                     });
                 }
                 
-                // Format distance in imperial units (miles)
-                const distance = activity.distance_miles || (activity.distance / 1609.34);
-                const distanceStr = distance >= 0.1 
-                    ? distance.toFixed(2) + ' mi'
-                    : (distance * 5280).toFixed(0) + ' ft';
+                // Format distance using unit preference
+                const distanceKm = activity.distance_km || (activity.distance / 1000);
+                const distanceMiles = activity.distance_miles || (activity.distance / 1609.34);
+                const distanceStr = formatDistance(distanceKm, distanceMiles);
                 
                 // Get sport type emoji
                 const sportEmoji = getSportEmoji(activity.sport_type);
@@ -1604,34 +1706,43 @@
                 runsOver10kEl.textContent = stats.runs_over_10k || 0;
             }
             
-            // Format total distance
+            // Format total distance using unit preference
+            const totalDistanceKm = stats.total_distance_km || (stats.total_distance ? stats.total_distance / 1000 : 0);
             const totalDistanceMiles = stats.total_distance_miles || 0;
             if (totalDistanceEl) {
-                if (totalDistanceMiles > 0) {
-                    totalDistanceEl.textContent = totalDistanceMiles.toFixed(1) + ' mi';
+                if (totalDistanceKm > 0 || totalDistanceMiles > 0) {
+                    totalDistanceEl.textContent = formatDistance(totalDistanceKm, totalDistanceMiles);
                 } else {
                     totalDistanceEl.textContent = '-';
                 }
             }
             
-            // Update average pace
+            // Update average pace using unit preference
             if (averagePaceEl) {
-                averagePaceEl.textContent = stats.average_pace || '-';
+                const pace = getPace(stats.average_pace, stats.average_pace_min_per_km);
+                averagePaceEl.textContent = pace || '-';
             }
             
-            // Update Fastest 10K from PRs
+            // Update Fastest 10K from PRs using unit preference
             if (fastest10kEl) {
-                if (prs.fastest_10k && prs.fastest_10k.pace) {
-                    fastest10kEl.textContent = prs.fastest_10k.pace;
+                if (prs.fastest_10k) {
+                    const pace = getPace(prs.fastest_10k.pace, prs.fastest_10k.pace_min_per_km);
+                    fastest10kEl.textContent = pace || '-';
                 } else {
                     fastest10kEl.textContent = '-';
                 }
             }
             
-            // Update Longest Run from PRs
+            // Update Longest Run from PRs using unit preference
             if (longestRunEl) {
-                if (prs.longest_run && prs.longest_run.distance_miles) {
-                    longestRunEl.textContent = prs.longest_run.distance_miles.toFixed(2) + ' mi';
+                if (prs.longest_run) {
+                    const distanceKm = prs.longest_run.distance_km || (prs.longest_run.distance ? prs.longest_run.distance / 1000 : 0);
+                    const distanceMiles = prs.longest_run.distance_miles || 0;
+                    if (distanceKm > 0 || distanceMiles > 0) {
+                        longestRunEl.textContent = formatDistance(distanceKm, distanceMiles);
+                    } else {
+                        longestRunEl.textContent = '-';
+                    }
                 } else {
                     longestRunEl.textContent = '-';
                 }
@@ -1665,7 +1776,7 @@
                 return;
             }
             
-            const labels = bins.map(bin => bin.range);
+            const labels = bins.map(bin => useMetric ? (bin.range_km || bin.range) : (bin.range || bin.range_km));
             const data = bins.map(bin => bin.count);
             
             // Destroy existing chart if it exists
@@ -1704,7 +1815,10 @@
                             callbacks: {
                                 label: function(context) {
                                     const bin = bins[context.dataIndex];
-                                    return `${bin.count} runs (${bin.distance_miles.toFixed(1)} mi total)`;
+                                    const distanceKm = bin.distance_km || (bin.distance_miles ? bin.distance_miles * 1.60934 : 0);
+                                    const distanceMiles = bin.distance_miles || 0;
+                                    const totalDistance = formatDistance(distanceKm, distanceMiles);
+                                    return `${bin.count} runs (${totalDistance} total)`;
                                 }
                             }
                         }
@@ -1822,7 +1936,9 @@
                     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 }
             });
-            const distances = points.map(p => p.distance_miles);
+            const distances = points.map(p => useMetric ? (p.distance_km || p.distance_miles * 1.60934) : (p.distance_miles || 0));
+            const distanceUnit = useMetric ? 'km' : 'mi';
+            const distanceLabel = useMetric ? 'Distance (km)' : 'Distance (miles)';
             
             // Destroy existing chart
             if (distanceTrendChartInstance) {
@@ -1836,7 +1952,7 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Distance (miles)',
+                            label: distanceLabel,
                             data: distances,
                             borderColor: '#fc4c02',
                             backgroundColor: 'rgba(252, 76, 2, 0.1)',
@@ -1857,7 +1973,10 @@
                                 callbacks: {
                                     label: function(context) {
                                         const point = points[context.dataIndex];
-                                        return `Distance: ${point.distance_miles.toFixed(2)} mi (${point.count} activities)`;
+                                        const distanceKm = point.distance_km || (point.distance_miles ? point.distance_miles * 1.60934 : 0);
+                                        const distanceMiles = point.distance_miles || 0;
+                                        const distanceStr = formatDistance(distanceKm, distanceMiles);
+                                        return `Distance: ${distanceStr} (${point.count} activities)`;
                                     }
                                 }
                             }
@@ -1867,7 +1986,7 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Distance (miles)'
+                                    text: distanceLabel
                                 }
                             }
                         }
@@ -1910,16 +2029,21 @@
             });
             
             // Convert pace strings (e.g., "10:08") to seconds for charting
+            // Use the appropriate pace based on unit preference
             const paces = points.map(p => {
-                if (!p.pace || p.pace === '-') return null;
-                const parts = p.pace.split(':');
+                const paceStr = useMetric ? (p.pace_min_per_km || p.pace) : (p.pace || p.pace_min_per_km);
+                if (!paceStr || paceStr === '-') return null;
+                const parts = paceStr.split(':');
                 if (parts.length === 2) {
                     const minutes = parseInt(parts[0], 10);
                     const seconds = parseInt(parts[1], 10);
-                    return minutes * 60 + seconds; // Total seconds per mile
+                    return minutes * 60 + seconds; // Total seconds per unit
                 }
                 return null;
             }).filter(p => p !== null);
+            
+            const paceLabel = useMetric ? 'Pace (min/km)' : 'Pace (min/mi)';
+            const paceYAxisLabel = useMetric ? 'Pace (seconds per km)' : 'Pace (seconds per mile)';
             
             // If no valid paces, show empty state
             if (paces.length === 0) {
@@ -1942,7 +2066,7 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Pace (min/mi)',
+                            label: paceLabel,
                             data: paces,
                             borderColor: '#fc4c02',
                             backgroundColor: 'rgba(252, 76, 2, 0.1)',
@@ -1963,7 +2087,9 @@
                                 callbacks: {
                                     label: function(context) {
                                         const point = points[context.dataIndex];
-                                        return `Pace: ${point.pace} min/mi`;
+                                        const paceStr = useMetric ? (point.pace_min_per_km || point.pace) : (point.pace || point.pace_min_per_km);
+                                        const paceUnit = useMetric ? 'min/km' : 'min/mi';
+                                        return `Pace: ${paceStr} ${paceUnit}`;
                                     }
                                 }
                             }
@@ -1973,7 +2099,7 @@
                                 reverse: true, // Lower is faster (better), so reverse the scale
                                 title: {
                                     display: true,
-                                    text: 'Pace (seconds per mile)'
+                                    text: paceYAxisLabel
                                 },
                                 ticks: {
                                     callback: function(value) {
@@ -2010,6 +2136,8 @@
         
         // Open default tab on load and fetch data if authenticated
         window.onload = function() {
+            // Load unit preference
+            loadUnitPreference();
             // Load date range from URL
             loadDateRangeFromURL();
             
@@ -2045,25 +2173,34 @@
 
     <div class="container">
         {{if .Authenticated}}
-            <!-- Date Range Picker -->
-            <div class="date-range-picker">
-                <div class="date-range-presets">
-                    <button id="date-range-7d" class="date-range-btn active" onclick="setDateRange('7d')">Last 7 Days</button>
-                    <button id="date-range-30d" class="date-range-btn" onclick="setDateRange('30d')">Last 30 Days</button>
-                    <button id="date-range-90d" class="date-range-btn" onclick="setDateRange('90d')">Last 90 Days</button>
-                    <button id="date-range-ytd" class="date-range-btn" onclick="setDateRange('ytd')">Year to Date</button>
-                    <button id="date-range-custom" class="date-range-btn" onclick="setDateRange('custom')">Custom</button>
+            <!-- Date Range Picker and Unit Toggle -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+                <div class="date-range-picker" style="flex: 1; min-width: 300px;">
+                    <div class="date-range-presets">
+                        <button id="date-range-7d" class="date-range-btn active" onclick="setDateRange('7d')">Last 7 Days</button>
+                        <button id="date-range-30d" class="date-range-btn" onclick="setDateRange('30d')">Last 30 Days</button>
+                        <button id="date-range-90d" class="date-range-btn" onclick="setDateRange('90d')">Last 90 Days</button>
+                        <button id="date-range-ytd" class="date-range-btn" onclick="setDateRange('ytd')">Year to Date</button>
+                        <button id="date-range-custom" class="date-range-btn" onclick="setDateRange('custom')">Custom</button>
+                    </div>
+                    <div id="custom-date-range" class="custom-date-range" style="display: none;">
+                        <label>
+                            <span>Start Date</span>
+                            <input type="date" id="custom-start-date">
+                        </label>
+                        <label>
+                            <span>End Date</span>
+                            <input type="date" id="custom-end-date">
+                        </label>
+                        <button onclick="applyCustomDateRange()">Apply Range</button>
+                    </div>
                 </div>
-                <div id="custom-date-range" class="custom-date-range" style="display: none;">
-                    <label>
-                        <span>Start Date</span>
-                        <input type="date" id="custom-start-date">
-                    </label>
-                    <label>
-                        <span>End Date</span>
-                        <input type="date" id="custom-end-date">
-                    </label>
-                    <button onclick="applyCustomDateRange()">Apply Range</button>
+                
+                <!-- Unit Toggle -->
+                <div class="unit-toggle">
+                    <span style="font-weight: 600; color: #333; font-size: 0.9rem;">Units:</span>
+                    <button id="unit-metric" class="unit-btn" onclick="toggleUnits()">Metric</button>
+                    <button id="unit-imperial" class="unit-btn active" onclick="toggleUnits()">Imperial</button>
                 </div>
             </div>
 

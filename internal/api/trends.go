@@ -18,6 +18,7 @@ func formatPaceSeconds(paceSec float64) string {
 type TrendDataPoint struct {
 	Date          string  `json:"date"`           // YYYY-MM-DD format
 	Distance      float64 `json:"distance"`     // in meters
+	DistanceKm    float64 `json:"distance_km"`  // in kilometers
 	DistanceMiles float64 `json:"distance_miles"`
 	Pace          string  `json:"pace"`          // formatted as "X:XX min/mi"
 	PaceMinPerKm  string  `json:"pace_min_per_km"` // formatted as "X:XX min/km"
@@ -130,6 +131,7 @@ func calculatePeriodAverage(activities []NormalizedActivity, dateStr string) Tre
 	point := TrendDataPoint{
 		Date:          dateStr,
 		Distance:      totalDistance,
+		DistanceKm:    totalDistance / 1000.0,
 		DistanceMiles: totalDistance / 1609.34,
 		Count:        count,
 	}
@@ -198,6 +200,7 @@ func applyMovingAverage(points []TrendDataPoint, window int) []TrendDataPoint {
 		if count > 0 {
 			avgDistance := sumDistance / float64(count)
 			smoothed[i].Distance = avgDistance
+			smoothed[i].DistanceKm = avgDistance / 1000.0
 			smoothed[i].DistanceMiles = avgDistance / 1609.34
 		}
 
