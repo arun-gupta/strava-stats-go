@@ -46,7 +46,7 @@ Revised to prioritize iterative delivery of visible features.
 - [x] 6.1: Implement Date Range Picker with preselect for Last 7 Days, 30 days, 90 days, YTD, Custom (show date picker for start and end date).
 - [x] 6.2: Implement Unit Toggle (Metric/Imperial).
 - [x] 6.3: Add spinners while the data is loaded.
-- [ ] 6.4: Implement error handling (empty states hiding tabs, API failures).
+- [x] 6.4: Implement error handling (empty states hiding tabs, API failures).
 - [ ] 6.5: Optimize initial load time (concurrent fetching).
 - [ ] 6.6: Ensure dashboard responsiveness.
 - [ ] 6.7: Verify client-side unit conversion logic.

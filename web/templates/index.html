@@ -2101,6 +2101,14 @@
             
             console.log('Updating trends with', points.length, 'data points');
             
+            // Show Trends tab if we have data
+            if (points.length > 0) {
+                showTabs(['Trends']);
+            } else {
+                // Hide if no trend data
+                hideTabsForError(['Trends']);
+            }
+            
             // Update distance trend chart
             updateDistanceTrendChart(points);
             
