@@ -61,16 +61,17 @@ To start the application and automatically open it in your browser (at http://lo
 
 ## Screenshots
 
-Screenshots of the application can be found in the [`docs/images/`](docs/images/) directory.
+<div align="center">
 
-*   Dashboard Overview
-*   Activity Heatmap
-*   Running Statistics
-*   Trends Analysis
-*   Date Range Picker
-*   Unit Toggle Interface
+[<img src="docs/images/overview.png" alt="Overview Tab" width="300" />](docs/images/overview.png)
+[<img src="docs/images/duration.png" alt="Duration Tab" width="300" />](docs/images/duration.png)
+[<img src="docs/images/heatmap-all.png" alt="Heatmap - All Activities" width="300" />](docs/images/heatmap-all.png)
 
-_Note: Screenshots will be added to showcase the application's features and user interface._
+[<img src="docs/images/heatmap-running.png" alt="Heatmap - Running Only" width="300" />](docs/images/heatmap-running.png)
+[<img src="docs/images/running-stats.png" alt="Running Statistics" width="300" />](docs/images/running-stats.png)
+[<img src="docs/images/trends.png" alt="Trends Analysis" width="300" />](docs/images/trends.png)
+
+</div>
 
 ## Features
 
