@@ -661,7 +661,7 @@
         }
         
         // Date range state
-        let currentDateRange = '7d'; // '7d', '30d', '90d', 'ytd', 'custom'
+        let currentDateRange = '7d'; // '7d', '30d', '90d', '6m', 'ytd', 'custom'
         let customStartDate = null;
         let customEndDate = null;
         
@@ -766,6 +766,10 @@
                     case '90d':
                         startDate = new Date(today);
                         startDate.setDate(today.getDate() - 89); // Include today, so 90 days total
+                        break;
+                    case '6m':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() - 179); // Include today, so 180 days total (6 months)
                         break;
                     case 'ytd':
                         startDate = new Date(today.getFullYear(), 0, 1); // January 1st
@@ -2180,6 +2184,7 @@
                         <button id="date-range-7d" class="date-range-btn active" onclick="setDateRange('7d')">Last 7 Days</button>
                         <button id="date-range-30d" class="date-range-btn" onclick="setDateRange('30d')">Last 30 Days</button>
                         <button id="date-range-90d" class="date-range-btn" onclick="setDateRange('90d')">Last 90 Days</button>
+                        <button id="date-range-6m" class="date-range-btn" onclick="setDateRange('6m')">Last 6 Months</button>
                         <button id="date-range-ytd" class="date-range-btn" onclick="setDateRange('ytd')">Year to Date</button>
                         <button id="date-range-custom" class="date-range-btn" onclick="setDateRange('custom')">Custom</button>
                     </div>
