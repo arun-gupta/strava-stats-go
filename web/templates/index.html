@@ -1038,11 +1038,16 @@
         }
         
         // Helper function to get pace string (backend provides both formats)
+        // Note: Pace cannot be directly converted between units (pace is time/distance)
+        // Backend should provide both pace_min_per_km and pace (min/mi)
+        // Fallback is provided but should rarely be needed
         function getPace(paceMinPerMi, paceMinPerKm) {
             if (useMetric) {
-                return paceMinPerKm || paceMinPerMi; // Fallback if km version not available
+                // Prefer km pace, fallback to mi pace if km not available (not ideal but better than nothing)
+                return paceMinPerKm || paceMinPerMi;
             } else {
-                return paceMinPerMi || paceMinPerKm; // Fallback if mi version not available
+                // Prefer mi pace, fallback to km pace if mi not available (not ideal but better than nothing)
+                return paceMinPerMi || paceMinPerKm;
             }
         }
         
